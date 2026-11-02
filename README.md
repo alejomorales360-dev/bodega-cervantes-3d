@@ -24,6 +24,7 @@ Renders en 4K (3840 × 2160) en la carpeta `renders/`:
 | Bodega pequeña y portones traseros | `renders/7-bodega-pequena.jpg` |
 | Garita bajo el alero | `renders/8-garita-alero.jpg` |
 | Muro del fondo con portones traseros | `renders/9-fondo.jpg` |
+| Pasillo con los pilares del centro | `renders/10-pilares.jpg` |
 
 Para generar capturas en alta resolución desde el navegador, abre la página con `#hd` al final de la dirección (sombras y resolución más altas).
 

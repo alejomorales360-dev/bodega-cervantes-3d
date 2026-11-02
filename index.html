@@ -257,7 +257,7 @@ const R = {
 };
 const ZONES = {
   bodega:  { name: 'Bodega principal', dims: '93,8 × 61,7 m', area: 5787,   color: '#55698a',
-             note: 'Muros de acero corrugado azul. 5 portones correderos hacia el alero y 5 traseros (1 a 4 a la bodega pequeña, 5 al patio trasero). Columnas pintadas con franjas amarillas y negras. Altura supuesta: 10 m al alero y 12,5 m en la cumbrera.' },
+             note: 'Muros de acero corrugado azul. 5 portones correderos hacia el alero y 5 traseros (1 a 4 a la bodega pequeña, 5 al patio trasero). Al centro, dos pilares por pasillo, uno frente al otro, unidos por una viga y pintados con franjas amarillas y negras. Altura supuesta: 10 m al alero y 12,5 m en la cumbrera.' },
   alero:   { name: 'Alero',            dims: '93,8 × 13,3 m', area: 1247,   color: '#8592a0',
              note: 'Cubierta en voladizo, sin pilares, sobre los 5 portones.' },
   peq:     { name: 'Bodega pequeña',   dims: '62,5 × 8 m',    area: 506.25, color: '#a3998a',
@@ -530,9 +530,22 @@ const wallMats = [];
     label(site, `Portón trasero ${i + 1}`, 'lbl tag', x, 6.4, B.z1 + 0.3);
     [-1, 1].forEach(sd => box(site, 0.45, 5.6, 0.45, null, x + sd * 2.75, 2.8, B.z1 + 0.15, { material: jambM }));
   });
-  // one row of columns across the middle of the warehouse (Cervantes → Macaya), hazard-striped
-  const colM = hazard(10);
-  for (let i = 1; i < 6; i++) box(site, 0.5, H, 0.5, null, B.x0 + i * (bw / 6), H / 2, bcz, { material: colM });
+  // columns at mid-depth: two per aisle, facing each other across the aisle, joined by a beam (portal), hazard-striped
+  const colM = hazard(9.4), beamM = (() => { const tx = hazardTex.clone(); tx.needsUpdate = true; tx.repeat.set(1, 6); tx.rotation = Math.PI / 2; return new THREE.MeshStandardMaterial({ map: tx, roughness: 0.7 }); })();
+  const sideM2 = mat('#d6362b'), signM = mat('#ffffff');
+  'ABCDE'.split('').forEach((c, i) => {
+    const xl = LOCS[c + '-1'].x1 + 0.35, xr = LOCS['BCDEF'[i] + '-1'].x0 - 0.35, xm = (xl + xr) / 2;
+    [xl, xr].forEach((x, k) => {
+      box(site, 0.6, 9.4, 0.6, null, x, 4.7, bcz, { material: colM });
+      box(site, 1.3, 0.35, 1.0, null, x, 0.35, bcz, { material: jambM });                         // base bumper
+      const out = k === 0 ? 1 : -1;                                                            // face toward the aisle
+      box(site, 0.05, 0.7, 0.55, null, x + out * 0.33, 3.6, bcz, { material: sideM2, cast: false }); // extinguisher sign
+      box(site, 0.06, 0.32, 0.3, null, x + out * 0.36, 3.6, bcz, { material: signM, cast: false });
+      const ext = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.6, 12), sideM2); ext.position.set(x + out * 0.45, 1.1, bcz - 0.15); site.add(ext);
+    });
+    box(site, xr - xl + 0.6, 0.9, 0.6, null, xm, 9.35, bcz, { material: beamM });               // portal beam
+    for (let x = xl + 0.5; x < xr - 0.5; x += 1.0) box(site, 0.55, 0.02, 0.18, '#f2c230', x, 0.07, bcz - 0.6, { cast: false }); // dashed line
+  });
   roofG = new THREE.Group(); site.add(roofG);
   const naves = 6, nw = bw / naves, rise = 2.5, roofMat = mat('#55698a', { roughness: 0.6, metalness: 0.25 });
   const sky = mat('#eef3f8', { emissive: '#b8c8da', emissiveIntensity: 0.25, roughness: 0.3 });
