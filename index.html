@@ -200,8 +200,8 @@ ul.list li+li{margin-top:5px}
       <ul class="list">
         <li>Bodega principal de 10 m al alero y 12,5 m en la cumbrera, con 6 naves.</li>
         <li>Alero en voladizo a 8 m, sin pilares.</li>
-        <li>5 portones de 5,5 × 5 m frente a los pasillos, como en el plano.</li>
-        <li>Las ubicaciones A–F se muestran como bloques de 3 m de alto, con medidas tomadas a escala del plano.</li>
+        <li>5 portones correderos hacia el alero y 5 traseros: los 4 primeros dan a la bodega pequeña y el último al patio trasero.</li>
+        <li>Las ubicaciones A–F tienen paquetes de madera de 2,4 a 4,8 m de largo, apilados de 3 a 5 alturas. Las medidas de las ubicaciones están tomadas a escala del plano.</li>
         <li>Oficina de 1 piso; camarines y pañol de 3 m de alto.</li>
         <li>Garita de guardias de 2 × 2 m (la caseta del gate mide 3 × 3 m) y baños de conductores de 5 × 8 m.</li>
       </ul>
@@ -210,8 +210,7 @@ ul.list li+li{margin-top:5px}
     <section>
       <h2>Por confirmar</h2>
       <ul class="list">
-        <li>En el muro del fondo, el plano tiene 5 marcas amarillas alineadas con los portones. ¿Son portones traseros?</li>
-        <li>A lo largo, patio + alero + bodega + patio trasero suman 136,3 m, frente a los 140 m de Cervantes.</li>
+                <li>A lo largo, patio + alero + bodega + patio trasero suman 136,3 m, frente a los 140 m de Cervantes.</li>
         <li>Alturas reales de la bodega, el alero y las oficinas.</li>
       </ul>
     </section>
@@ -242,7 +241,7 @@ const R = {
   alero:   { x0: 0.5,  x1: 94.3, z0: 48,    z1: 61.3,   h: 8.4 },
   bodega:  { x0: 0.5,  x1: 94.3, z0: 61.3,  z1: 123,    h: 12.5 },
   est:     { x0: 94.6, x1: 98.8, z0: 61.3,  z1: 123.79, h: 1.6 },
-  peq:     { x0: 5,    x1: 67.5, z0: 123,   z1: 131,    h: 6.4 },
+  peq:     { x0: 6.5,  x1: 69,   z0: 123,   z1: 131,    h: 6.4 },
   trasero: { x0: 0,    x1: 100,  z0: 123,   z1: 136.3,  h: 0.3 },
   oficina: { x0: 85,   x1: 100,  z0: 0,     z1: 30,     h: 3.8 },
   gate:    { x0: 2,    x1: 15,   z0: 24.5,  z1: 32,     h: 3.0 },
@@ -253,15 +252,17 @@ const R = {
   verde:   { x0: 93.4, x1: 99.7, z0: 13.2,  z1: 27.2,   h: 0.8 },
   segC:    { x0: 0.4,  x1: 6,    z0: 45.4,  z1: 49.7,   h: 0.4 },
   segM:    { x0: 94.4, x1: 99.6, z0: 28.3,  z1: 32.6,   h: 0.4 },
+  garAlero:{ x0: 91.4, x1: 93.2, z0: 59.2,  z1: 61.0,   h: 2.6 },
+  casetaT: { x0: 71,   x1: 78,   z0: 131.2, z1: 135.8,  h: 3.4 },
   peatonal:{ x0: 88.6, x1: 90.6, z0: -0.2,  z1: 2.4,    h: 2.6 },
 };
 const ZONES = {
   bodega:  { name: 'Bodega principal', dims: '93,8 × 61,7 m', area: 5787,   color: '#55698a',
-             note: '5 portones hacia el alero. Altura supuesta: 10 m al alero y 12,5 m en la cumbrera.' },
+             note: 'Muros de acero corrugado azul. 5 portones correderos hacia el alero y 5 traseros (1 a 4 a la bodega pequeña, 5 al patio trasero). Columnas pintadas con franjas amarillas y negras. Altura supuesta: 10 m al alero y 12,5 m en la cumbrera.' },
   alero:   { name: 'Alero',            dims: '93,8 × 13,3 m', area: 1247,   color: '#8592a0',
              note: 'Cubierta en voladizo, sin pilares, sobre los 5 portones.' },
   peq:     { name: 'Bodega pequeña',   dims: '62,5 × 8 m',    area: 506.25, color: '#a3998a',
-             note: 'Adosada al muro del fondo de la bodega principal, hacia el sitio eriazo. Altura supuesta: 6 m.' },
+             note: 'Adosada al muro del fondo de la bodega principal. Se entra desde la bodega grande por los portones traseros 1 a 4. Guarda paquetes de madera. Altura supuesta: 6 m.' },
   oficina: { name: 'Sector oficinas',  dims: '15 × 30 m',     area: 450,    color: '#bcd3e6',
              note: 'Esquina Pedro Montt con Juan Macaya. Incluye la oficina, los camarines, el pañol y el camarín de mujeres.' },
   est:     { name: 'Estacionamiento',  dims: '4,2 × 62,49 m', area: 262.4,  color: '#3f444b',
@@ -282,6 +283,10 @@ const ZONES = {
              note: 'Garita donde están los monitores de las cámaras de seguridad. Tamaño supuesto: 2 × 2 m.', short: 'junto al sendero' },
   verde:   { name: 'Área verde', dims: 'al costado de los camarines', area: null, color: '#6f9a4f',
              note: 'Área verde al costado de los camarines, entre la oficina y el camarín de mujeres. El sendero peatonal llega hasta aquí.', short: 'junto a camarines' },
+  garAlero:{ name: 'Garita bajo el alero', dims: 'esquina del alero, cerca del portón Macaya', area: null, color: '#eef1f3',
+             note: 'Garita de guardias bajo el alero, en la esquina del fondo junto al muro de la bodega y cerca del portón Macaya. Es una caseta blanca prefabricada, de unos 1,8 × 1,8 m.', short: 'esquina alero' },
+  casetaT: { name: 'Caseta patio trasero', dims: 'frente al portón trasero 5', area: null, color: '#f1f1ee',
+             note: 'Construcción blanca en el patio trasero, frente a la salida del portón 5, con jaulas de cilindros al frente. El uso está por confirmar.', short: 'patio trasero' },
   peatonal:{ name: 'Portón peatonal', dims: 'entre la garita de cámaras y la oficina', area: null, color: '#f2c230',
              note: 'Acceso peatonal desde calle Pedro Montt, entre la garita de cámaras y la oficina. Entra directo a la zona de descanso. Ancho supuesto: 2 m.', short: 'a Pedro Montt' },
   segC:    { name: 'Zona segura Cervantes', dims: 'al costado del portón Cervantes', area: null, color: '#2e9d57',
@@ -442,6 +447,7 @@ const locsG = new THREE.Group(); root.add(locsG);
 const trucksG = new THREE.Group(); root.add(trucksG);
 const hl = new THREE.Group(); root.add(hl);
 let roofG, wallMat;
+const wallMats = [];
 {
   const B = R.bodega, A = R.alero, P = R.peq, E = R.est, T = R.trasero, O = R.oficina;
 
@@ -482,25 +488,50 @@ let roofG, wallMat;
   label(site, 'Portón Cervantes', 'lbl tag', 0, 4.2, 38.5);
   label(site, 'Portón Macaya', 'lbl tag', W, 4.2, 39);
 
-  // --- Bodega principal
-  wallMat = new THREE.MeshStandardMaterial({ color: '#dcd8d0', roughness: 0.9 });
+  // --- Bodega principal: dark blue corrugated walls (as in the photos)
+  const corrugated = (base, len) => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 32;
+    const g = c.getContext('2d');
+    for (let i = 0; i < 256; i += 16) { const gr = g.createLinearGradient(i, 0, i + 16, 0); gr.addColorStop(0, '#8a8a8a'); gr.addColorStop(.35, '#ffffff'); gr.addColorStop(.7, '#cfcfcf'); gr.addColorStop(1, '#7a7a7a'); g.fillStyle = gr; g.fillRect(i, 0, 16, 32); }
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.repeat.set(len / 4.8, 1);
+    return new THREE.MeshStandardMaterial({ color: base, map: t, roughness: 0.65, metalness: 0.3 });
+  };
+  wallMat = corrugated('#6283b0', 93.8);
+  const wallMatZ = corrugated('#6283b0', 61.7), wallMatP = corrugated('#6283b0', 62.5), wallMatS = corrugated('#6283b0', 8);
+  wallMats.push(wallMat, wallMatZ, wallMatP, wallMatS);
   const H = 10, t = 0.3, bw = B.x1 - B.x0, bd = B.z1 - B.z0, bcx = (B.x0 + B.x1) / 2, bcz = (B.z0 + B.z1) / 2;
-  [[bw, t, bcx, B.z0 + t / 2], [bw, t, bcx, B.z1 - t / 2], [t, bd, B.x0 + t / 2, bcz], [t, bd, B.x1 - t / 2, bcz]]
-    .forEach(([w, d, x, z]) => box(site, w, H, d, null, x, H / 2, z, { material: wallMat, zone: 'bodega' }));
-  const doorM = (() => {
-    const c = document.createElement('canvas'); c.width = 64; c.height = 256;
-    const g = c.getContext('2d'); g.fillStyle = '#9aa3ad'; g.fillRect(0, 0, 64, 256);
-    for (let y = 0; y < 256; y += 16) { g.fillStyle = '#7d8691'; g.fillRect(0, y, 64, 3); g.fillStyle = '#b4bcc5'; g.fillRect(0, y + 3, 64, 2); }
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.5, metalness: 0.35 });
+  [[bw, t, bcx, B.z0 + t / 2, wallMat], [bw, t, bcx, B.z1 - t / 2, wallMat], [t, bd, B.x0 + t / 2, bcz, wallMatZ], [t, bd, B.x1 - t / 2, bcz, wallMatZ]]
+    .forEach(([w, d, x, z, m]) => box(site, w, H, d, null, x, H / 2, z, { material: m, zone: 'bodega' }));
+  const hazardTex = (() => {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+    const g = c.getContext('2d'); g.fillStyle = '#f2c230'; g.fillRect(0, 0, 64, 64);
+    g.fillStyle = '#1d1f22'; for (let i = -64; i < 128; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 16, 0); g.lineTo(i + 80, 64); g.lineTo(i + 64, 64); g.closePath(); g.fill(); }
+    const tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.colorSpace = THREE.SRGBColorSpace; return tx;
   })();
+  const hazard = (hgt) => { const tx = hazardTex.clone(); tx.needsUpdate = true; tx.repeat.set(1, hgt / 0.6); return new THREE.MeshStandardMaterial({ map: tx, roughness: 0.7 }); };
+  const jambM = hazard(5.6);
+  const slideM = mat('#2f5f9e', { roughness: 0.55, metalness: 0.3 }), openM = mat('#14181d', { roughness: 1 });
+  const backDoorM = (() => {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const g = c.getContext('2d'); g.fillStyle = '#26364d'; g.fillRect(0, 0, 128, 128);
+    g.fillStyle = '#dfe9f2'; g.fillRect(38, 22, 16, 22); g.fillRect(74, 22, 16, 22);
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({ map: tx, roughness: 0.6, metalness: 0.3 });
+  })();
+  // front: 5 open sliding doors toward the alero; back: 5 doors (4 into the bodega pequeña, the 5th to the patio trasero)
   DOORS.forEach((x, i) => {
-    box(site, 5.5, 5, 0.14, null, x, 2.5, B.z0 - 0.08, { zone: 'bodega', material: doorM });
-    box(site, 6.1, 0.35, 0.3, '#3c4148', x, 5.2, B.z0 - 0.15, { cast: false });
-    [-1, 1].forEach(sd => { box(site, 0.3, 5.2, 0.3, '#3c4148', x + sd * 2.9, 2.6, B.z0 - 0.15, { cast: false }); box(site, 0.25, 1.1, 0.25, '#f2c230', x + sd * 3.4, 0.55, B.z0 - 0.7); });
-    box(site, 5.5, 0.02, 1.4, '#e5a900', x, 0.06, B.z0 - 0.8, { cast: false });
-    label(site, `Portón ${i + 1}`, 'lbl tag', x, 6, B.z0 - 0.3);
+    box(site, 5.0, 5.4, 0.1, null, x, 2.7, B.z0 - 0.04, { material: openM, cast: false, zone: 'bodega' });
+    box(site, 5.2, 5.6, 0.16, null, x + 5.4, 2.8, B.z0 - 0.3, { material: slideM });                     // leaf slid aside
+    box(site, 11.2, 0.25, 0.25, '#55595f', x + 2.7, 5.75, B.z0 - 0.3, { cast: false });                 // rail
+    [-1, 1].forEach(sd => box(site, 0.45, 5.6, 0.45, null, x + sd * 2.75, 2.8, B.z0 - 0.2, { material: jambM }));
+    box(site, 5.0, 0.02, 1.6, '#e5a900', x, 0.06, B.z0 - 1.0, { cast: false });
+    label(site, `Portón ${i + 1}`, 'lbl tag', x, 6.4, B.z0 - 0.3);
+    box(site, 5.0, 5.4, 0.12, null, x, 2.7, B.z1 + 0.06, { material: backDoorM, zone: 'bodega' });
+    [-1, 1].forEach(sd => box(site, 0.45, 5.6, 0.45, null, x + sd * 2.75, 2.8, B.z1 + 0.15, { material: jambM }));
   });
+  // interior columns at the nave lines, painted with hazard stripes
+  const colM = hazard(10);
+  for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) box(site, 0.5, H, 0.5, null, B.x0 + i * (bw / 6), H / 2, B.z0 + j * (bd / 6), { material: colM });
   roofG = new THREE.Group(); site.add(roofG);
   const naves = 6, nw = bw / naves, rise = 2.5, roofMat = mat('#55698a', { roughness: 0.6, metalness: 0.25 });
   const sky = mat('#eef3f8', { emissive: '#b8c8da', emissiveIntensity: 0.25, roughness: 0.3 });
@@ -521,13 +552,41 @@ let roofG, wallMat;
     }
   }
 
-  // --- Alero: cantilever, no pillars
-  box(site, A.x1 - A.x0, 0.5, A.z1 - A.z0, '#7f8b98', (A.x0 + A.x1) / 2, 8.25, (A.z0 + A.z1) / 2, { zone: 'alero' });
-  box(site, A.x1 - A.x0, 0.9, 0.2, '#6c7680', (A.x0 + A.x1) / 2, 8.0, A.z0 + 0.1, { zone: 'alero' }); // fascia
+  // --- Alero: cantilever roof on steel trusses, no pillars
+  const AW = A.x1 - A.x0, AD = A.z1 - A.z0, acx = (A.x0 + A.x1) / 2;
+  box(site, AW, 0.25, AD, '#7f8b98', acx, 8.75, (A.z0 + A.z1) / 2, { zone: 'alero' });
+  box(site, AW, 0.8, 0.2, '#5c6672', acx, 8.45, A.z0 + 0.1, { zone: 'alero' }); // fascia
+  const trussM = mat('#9aa0a6', { metalness: 0.5, roughness: 0.5 });
+  const bar = (x, y1, z1, y2, z2, s = 0.12) => {
+    const len = Math.hypot(y2 - y1, z2 - z1);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(s, s, len), trussM);
+    m.position.set(x, (y1 + y2) / 2, (z1 + z2) / 2); m.rotation.x = -Math.atan2(y2 - y1, z2 - z1); m.castShadow = true; site.add(m);
+  };
+  for (let x = A.x0 + 1; x <= A.x1 - 0.5; x += AW / 15) {
+    const zw = A.z1, ze = A.z0 + 0.3;           // wall side → outer edge
+    bar(x, 8.55, zw, 8.55, ze, 0.16);            // top chord
+    bar(x, 6.6, zw, 8.0, ze, 0.16);              // bottom chord
+    for (let k = 0; k < 6; k++) {
+      const za = zw - k * (zw - ze) / 6, zb = zw - (k + 1) * (zw - ze) / 6;
+      const ya = 6.6 + (8.0 - 6.6) * k / 6, yb = 6.6 + (8.0 - 6.6) * (k + 1) / 6;
+      bar(x, ya, za, 8.55, zb, 0.09);
+      bar(x, yb, zb, 8.55, zb, 0.08);
+    }
+  }
+  [A.z0 + 0.4, (A.z0 + A.z1) / 2].forEach(z => box(site, AW, 0.14, 0.14, null, acx, 8.0, z, { material: trussM, cast: false }));
+  box(site, AW, 0.3, 0.3, '#c9ccd0', acx, 7.5, A.z1 - 3, { cast: false });   // pipe along the alero
+  // pedestrian lane along the wall under the alero
+  floor(site, { x0: A.x0 + 1, x1: A.x1 - 1, z0: A.z1 - 2.4, z1: A.z1 - 2.25 }, null, 0.06, null, mat('#f2c230'));
+  floor(site, { x0: A.x0 + 1, x1: A.x1 - 1, z0: A.z1 - 1.3, z1: A.z1 - 1.15 }, null, 0.06, null, mat('#f2c230'));
 
-  // --- Bodega pequeña (behind the main warehouse)
-  rbox(site, P, 6, '#cfc7b8', 0, { zone: 'peq' });
-  box(site, P.x1 - P.x0 + 0.4, 0.3, P.z1 - P.z0 + 0.4, ZONES.peq.color, (P.x0 + P.x1) / 2, 6.15, (P.z0 + P.z1) / 2, { zone: 'peq' });
+  // --- Bodega pequeña (behind the main warehouse; doors 1–4 open into it)
+  const pw2 = P.x1 - P.x0, pd2 = P.z1 - P.z0, pcx = (P.x0 + P.x1) / 2, pcz = (P.z0 + P.z1) / 2, PH = 6;
+  floor(site, P, '#c4c1b9', 0.045, 'peq');
+  box(site, pw2, PH, 0.25, null, pcx, PH / 2, P.z1 - 0.12, { material: wallMatP, zone: 'peq' });
+  [P.x0 + 0.12, P.x1 - 0.12].forEach(x => box(site, 0.25, PH, pd2, null, x, PH / 2, pcz, { material: wallMatS, zone: 'peq' }));
+  for (let x = P.x0 + 3; x < P.x1 - 2; x += 4) box(site, 2.2, 0.9, 0.06, '#cfe0ee', x, 4.9, P.z1 + 0.02, { cast: false }); // high windows
+  const pr = new THREE.Mesh(new THREE.BoxGeometry(pw2 + 0.4, 0.25, pd2 + 0.4), mat('#5c6f8c', { roughness: 0.6, metalness: 0.25 }));
+  pr.position.set(pcx, PH + 0.6, pcz); pr.rotation.x = -0.12; pr.castShadow = true; pr.userData.zone = 'peq'; roofG.add(pr); pickables.push(pr);
 
   // --- Sector oficinas: oficina + camarines / pañol / camarín mujer
   const of = { x0: 92, x1: 99.7, z0: 0.3, z1: 12.8 };
@@ -561,6 +620,27 @@ let roofG, wallMat;
   rbox(site, Bn, 3.0, '#dfe7ee', 0, { zone: 'banos' });
   box(site, Bn.x1 - Bn.x0 + 0.3, 0.2, Bn.z1 - Bn.z0 + 0.3, '#7fa7c9', (Bn.x0 + Bn.x1) / 2, 3.1, (Bn.z0 + Bn.z1) / 2, { zone: 'banos' });
   [52, 56].forEach(z => box(site, 0.06, 2.0, 0.9, '#3d5a78', Bn.x1 + 0.03, 1.0, z, { cast: false }));
+
+  // --- Garita bajo el alero (white prefab booth)
+  {
+    const G2 = R.garAlero, gx = (G2.x0 + G2.x1) / 2, gz = (G2.z0 + G2.z1) / 2;
+    rbox(site, G2, 2.3, '#eef1f3', 0.1, { zone: 'garAlero' });
+    box(site, 2.0, 0.15, 2.0, '#d9dde0', gx, 2.48, gz, { zone: 'garAlero' });
+    box(site, 0.9, 1.0, 0.05, '#1f2a36', gx, 1.6, G2.z0 - 0.03, { cast: false });
+    box(site, 0.05, 1.0, 1.0, '#1f2a36', G2.x0 - 0.03, 1.6, gz, { cast: false });
+    box(site, 0.18, 1.0, 0.18, '#d6362b', G2.x0 - 0.5, 0.5, G2.z0 - 0.4);
+  }
+  // --- Caseta del patio trasero + yellow pedestrian lines from portón 5
+  {
+    const C2 = R.casetaT, ccx = (C2.x0 + C2.x1) / 2, ccz = (C2.z0 + C2.z1) / 2;
+    rbox(site, C2, 3.0, '#f1f1ee', 0, { zone: 'casetaT' });
+    const rf = new THREE.Mesh(new THREE.BoxGeometry(C2.x1 - C2.x0 + 0.5, 0.15, C2.z1 - C2.z0 + 0.6), mat('#c9ccd0', { metalness: 0.4 }));
+    rf.position.set(ccx, 3.2, ccz); rf.rotation.x = 0.06; rf.castShadow = true; site.add(rf);
+    box(site, 1.0, 2.1, 0.06, '#5b6470', ccx + 1.5, 1.05, C2.z0 - 0.03, { cast: false });
+    [ccx - 2.4, ccx - 1.3].forEach(x => { box(site, 1.0, 1.8, 0.8, '#9aa3ad', x, 0.95, C2.z0 - 0.5); box(site, 1.02, 0.08, 0.82, '#3a4f6e', x, 1.86, C2.z0 - 0.5); });
+    floor(site, { x0: DOORS[4] - 1.0, x1: DOORS[4] - 0.75, z0: R.bodega.z1 + 0.3, z1: C2.z0 - 1 }, null, 0.06, null, mat('#f2c230'));
+    floor(site, { x0: DOORS[4] + 0.75, x1: DOORS[4] + 1.0, z0: R.bodega.z1 + 0.3, z1: C2.z0 - 1 }, null, 0.06, null, mat('#f2c230'));
+  }
 
   // --- Zonas seguras al costado de ambos portones
   const safeTex = () => {
@@ -637,6 +717,8 @@ let roofG, wallMat;
   lbl('peatonal', 89.6, 3.6, 0);
   lbl('segC', 3.2, 2.4, 47.5);
   lbl('segM', 97, 2.4, 30.4);
+  lbl('garAlero', 92.3, 4.4, 60.1);
+  lbl('casetaT', 74.5, 5.2, 133.5);
   label(site, 'Sendero peatonal', 'lbl tag', 40, 1.2, 1.3);
   label(site, 'Oficina', 'lbl tag', (of.x0 + of.x1) / 2, 4.8, 6.5);
   label(site, 'Camarines · Pañol · Camarín mujer', 'lbl tag', 89, 4.4, 20.6);
@@ -655,51 +737,83 @@ let roofG, wallMat;
   dim(dims, [O.x0 - 0.5, 5.5, O.z0], [O.x0 - 0.5, 5.5, O.z1], '30 m');
 }
 
-/* ---------- Storage locations A–F: floor marking + palletised stock ---------- */
+/* ---------- Storage locations A–F: floor marking + wood packages ---------- */
 const locLabels = [];
 {
+  // package faces drawn on canvas: white-wrapped moulding, clear-wrapped pine, plywood. Generic, no brand marks.
+  const face = (kind, side) => {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+    const g = c.getContext('2d');
+    const body = kind === 'white' ? '#eef0ee' : kind === 'pine' ? '#e8cf9f' : '#d9bf93';
+    g.fillStyle = body; g.fillRect(0, 0, 512, 128);
+    g.globalAlpha = 0.35; g.fillStyle = kind === 'white' ? '#c9cdc9' : '#b8945c';
+    for (let y = 6; y < 108; y += kind === 'ply' ? 4 : 9) g.fillRect(0, y, 512, 1);
+    g.globalAlpha = 1;
+    if (side && kind === 'white') { g.fillStyle = '#1f8a4c'; for (let x = 40; x < 512; x += 150) g.fillRect(x, 60, 70, 10); }
+    if (side && kind === 'ply') { g.fillStyle = '#ffffff'; g.fillRect(150, 66, 210, 22); g.fillStyle = '#e0662b'; g.fillRect(270, 66, 90, 22); }
+    g.fillStyle = '#c8a46a'; [6, 500].forEach(x => g.fillRect(x, 0, 6, 110));                 // corner boards
+    if (side) { g.fillStyle = '#1f8a4c'; [120, 256, 392].forEach(x => g.fillRect(x, 0, 5, 110)); } // straps
+    g.fillStyle = '#9c7448'; g.fillRect(0, 110, 512, 18);                                        // bearers
+    g.fillStyle = '#3a3026'; for (let x = 60; x < 512; x += 130) g.fillRect(x, 112, 70, 16);
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 0, 512, 3);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.55 });
+  };
+  const KINDS = ['white', 'pine', 'ply'];
+  const pkgMat = {};
+  KINDS.forEach(k => { const sd = face(k, true), en = face(k, false), top = mat(k === 'white' ? '#f1f3f1' : k === 'pine' ? '#ead3a6' : '#dcc39a', { roughness: 0.5 }); pkgMat[k] = [sd, sd, top, top, en, en]; });
+  const PW = 1.18, PH = 0.82;                       // package width and height (bearers included)
+  const geoms = {}, buckets = {};
+  const geoFor = len => (geoms[len] ||= new THREE.BoxGeometry(PW, PH, len));
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), QR = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2), S = new THREE.Vector3(1, 1, 1), P = new THREE.Vector3();
+  const put = (kind, len, x, y, z, rot) => (buckets[kind + ':' + len] ||= []).push(M.compose(P.set(x, y, z), rot ? QR : Q, S).clone());
+  const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(11);
+  const pick = () => { const r = rnd(); return r < 0.5 ? 'white' : r < 0.78 ? 'pine' : 'ply'; };
+
   const lineM = mat('#f2c230');
   const floorM = new THREE.MeshStandardMaterial({ color: '#4a7fc0', roughness: 0.8, transparent: true, opacity: 0.35 });
   const hitM = new THREE.MeshBasicMaterial({ visible: false });
-  const cellX = 1.32, cellZ = 1.12, tierH = 1.12;
-  const palGeo = new THREE.BoxGeometry(1.2, 0.14, 1.0), loadGeo = new THREE.BoxGeometry(1.14, 0.96, 0.96);
-  const pal = [], load = [], loadCol = [];
-  const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(11);
-  const colors = ['#c99a62', '#b9844f', '#d8b07a', '#e9e6df', '#c99a62', '#a8794a'].map(c => new THREE.Color(c));
-  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(1, 1, 1), P = new THREE.Vector3();
   for (const [code, r] of Object.entries(LOCS)) {
     const w = r.x1 - r.x0, d = r.z1 - r.z0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
     floor(locsG, { x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1 }, null, 0.055, null, floorM);
     [[w, 0.12, cx, r.z0], [w, 0.12, cx, r.z1], [0.12, d, r.x0, cz], [0.12, d, r.x1, cz]]
       .forEach(([a, b, x, z]) => box(locsG, a, 0.02, b, null, x, 0.065, z, { cast: false, material: lineM }));
-    const nx = Math.floor((w - 0.3) / cellX), nz = Math.max(1, Math.floor((d - 0.2) / cellZ));
-    const ox = cx - (nx - 1) * cellX / 2, oz = cz - (nz - 1) * cellZ / 2;
+    // packages lie lengthwise along z: 4.8 m (or two of 2.4 m) in full rows, 2.4 m in the narrow rows 1 and 7
+    const kind = pick(), lens = d >= 4.9 ? (rnd() < 0.6 ? [4.8] : [2.4, 2.4]) : [2.4];
+    const n = Math.floor((w - 0.2) / (PW + 0.08)), ox = cx - (n - 1) * (PW + 0.08) / 2;
+    const base = 3 + Math.floor(rnd() * 3);                  // 3–5 tiers
+    const picked = rnd() < 0.35 ? Math.floor(n * (0.5 + rnd() * 0.4)) : n;
     let maxT = 0;
-    const blockTiers = rnd() < 0.55 ? 3 : 2, base = colors[Math.floor(rnd() * colors.length)];
-    const emptyFrom = rnd() < 0.35 ? Math.floor(nx * (0.55 + rnd() * 0.35)) : nx; // some blocks partly picked
-    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
-      if (i >= emptyFrom && rnd() < 0.8) continue;
-      const tiers = i >= emptyFrom ? 1 : blockTiers;
+    for (let i = 0; i < n; i++) {
+      const tiers = i >= picked ? Math.floor(rnd() * 2) : Math.max(1, base + (rnd() < 0.25 ? -1 : 0));
       maxT = Math.max(maxT, tiers);
-      for (let t = 0; t < tiers; t++) {
-        const y = t * tierH;
-        pal.push(M.compose(P.set(ox + i * cellX, y + 0.07, oz + j * cellZ), Q, S).clone());
-        load.push(M.compose(P.set(ox + i * cellX, y + 0.14 + 0.48, oz + j * cellZ), Q, S).clone());
-        loadCol.push(rnd() < 0.1 ? colors[Math.floor(rnd() * colors.length)] : base);
+      let z = cz - lens.reduce((a, b) => a + b + 0.08, -0.08) / 2;
+      for (const len of lens) {
+        for (let t = 0; t < tiers; t++) put(rnd() < 0.08 ? pick() : kind, len, ox + i * (PW + 0.08), PH / 2 + t * PH, z + len / 2, false);
+        z += len + 0.08;
       }
     }
     const hit = new THREE.Mesh(new THREE.BoxGeometry(w, r.h, d), hitM);
     hit.position.set(cx, r.h / 2, cz); hit.userData.loc = code; locsG.add(hit); pickables.push(hit);
-    const lo = label(locsG, code, 'lbl loc', cx, Math.max(1, maxT) * tierH + 0.6, cz);
+    const lo = label(locsG, code, 'lbl loc', cx, Math.max(1, maxT) * PH + 0.6, cz);
     locLabels.push([lo, new THREE.Vector3()]);
   }
-  const inst = (geo, material, arr, cols) => {
-    const m = new THREE.InstancedMesh(geo, material, arr.length);
-    arr.forEach((mm, i) => { m.setMatrixAt(i, mm); if (cols) m.setColorAt(i, cols[i]); });
+  // bodega pequeña: two rows of 4.8 m packages along its long walls, central aisle, clear in front of doors 1–4
+  const Pq = R.peq;
+  [Pq.z0 + 0.9, Pq.z0 + 2.15, Pq.z1 - 2.15, Pq.z1 - 0.9].forEach((z, row) => {
+    for (let x = Pq.x0 + 0.8; x + 4.8 < Pq.x1 - 0.5; x += 5.0) {
+      const xc = x + 2.4;
+      if (row < 2 && DOORS.slice(0, 4).some(dx => Math.abs(dx - xc) < 5.2)) continue;
+      const kind = pick(), tiers = 2 + Math.floor(rnd() * 3);
+      for (let t = 0; t < tiers; t++) put(kind, 4.8, xc, PH / 2 + t * PH, z, true);
+    }
+  });
+  for (const [key, arr] of Object.entries(buckets)) {
+    const [kind, len] = key.split(':');
+    const m = new THREE.InstancedMesh(geoFor(+len), pkgMat[kind], arr.length);
+    arr.forEach((mm, i) => m.setMatrixAt(i, mm));
     m.castShadow = m.receiveShadow = true; locsG.add(m);
-  };
-  inst(palGeo, mat('#9c7448'), pal);
-  inst(loadGeo, new THREE.MeshStandardMaterial({ roughness: 0.85 }), load, loadCol);
+  }
 }
 
 /* ---------- Vehicles and equipment (as drawn in the plan) ---------- */
@@ -789,7 +903,7 @@ function forklift(parent, x, z, rotY = 0, color = '#e8771e', liftLoad = false) {
   [-0.35, 0.35].forEach(px => box(g, 0.1, 2.6, 0.12, null, px, 1.4, -1.15, { material: darkM })); // mast
   box(g, 0.9, 0.5, 0.06, null, 0, liftLoad ? 1.3 : 0.45, -1.22, { material: darkM });
   [-0.3, 0.3].forEach(px => box(g, 0.12, 0.05, 1.1, null, px, liftLoad ? 1.08 : 0.12, -1.8, { material: chromeM }));
-  if (liftLoad) { box(g, 1.2, 0.14, 1.0, '#9c7448', 0, 1.18, -1.8); box(g, 1.14, 0.96, 0.96, '#c99a62', 0, 1.73, -1.8); }
+  if (liftLoad) { box(g, 2.4, 0.12, 1.15, '#9c7448', 0, 1.17, -1.8); box(g, 2.4, 0.7, 1.15, '#eef0ee', 0, 1.58, -1.8); [-0.6, 0, 0.6].forEach(px => box(g, 0.05, 0.72, 1.17, '#1f8a4c', px, 1.58, -1.8, { cast: false })); }
   [-0.5, 0.5].forEach(px => { wheel(g, px, 0.33, -0.7, 0.33, 0.25); wheel(g, px, 0.28, 0.75, 0.28, 0.22); });
   g.position.set(x, 0, z); g.rotation.y = rotY; parent.add(g);
 }
@@ -820,8 +934,8 @@ function reachStacker(parent, x, z, rotY = 0) {
   // container truck waiting near the Macaya side (cab toward Cervantes)
   rig(trucksG, { x: 78, z: 27, rotY: Math.PI / 2, load: 'container', cab: '#c23b2e', contColor: '#9fa4a9' });
   // 15 containers in a row in front of the alero
-  const greys = ['#a9adb1', '#9fa4a9', '#b3b6b9', '#a3a7ab'];
-  for (let i = 0; i < 15; i++) container(trucksG, greys[i % 4], 23.5 + i * 3.05, 0, 38.2);
+  const cols = ['#8e3b33', '#2f5d8c', '#a9adb1', '#7a2e2e', '#9fa4a9', '#3a5f8f', '#8e3b33', '#b3b6b9', '#2a3f66', '#a3a7ab', '#7a2e2e', '#2f5d8c', '#9fa4a9', '#8e3b33', '#3a5f8f'];
+  for (let i = 0; i < 15; i++) container(trucksG, cols[i], 23.5 + i * 3.05, 0, 38.2);
   label(trucksG, 'Contenedores', 'lbl tag', 45, 4, 38.2);
   reachStacker(trucksG, 74, 41, 0);
   // forklifts: yard, docks and aisles
@@ -912,7 +1026,7 @@ function setView(name) {
 }
 function applyToggles() {
   roofG.visible = $('#t-roof').checked && !interior && !iso;
-  wallMat.transparent = interior; wallMat.opacity = interior ? 0.16 : 1; wallMat.depthWrite = !interior; wallMat.needsUpdate = true;
+  wallMats.forEach(m => { m.transparent = interior; m.opacity = interior ? 0.16 : 1; m.depthWrite = !interior; m.needsUpdate = true; });
   labelR.domElement.classList.toggle('no-zones', !$('#t-labels').checked);
   labelR.domElement.classList.toggle('no-dims', !$('#t-dims').checked);
   dims.visible = $('#t-dims').checked;
@@ -925,7 +1039,7 @@ function applyToggles() {
 $('#zone-rows').innerHTML = ORDER.map(id => {
   const Z = ZONES[id];
   return `<tr data-id="${id}" tabindex="0"><td class="sw"><i style="background:${Z.color}"></i></td><td>${Z.name}</td><td class="dm">${Z.dims}</td><td class="ar">${fmt(Z.area, Z.area % 1 ? 2 : 0)} m²</td></tr>`;
-}).join('') + ['gate', 'garita', 'banos', 'descanso', 'camaras', 'verde', 'peatonal', 'segC', 'segM'].map(id => `<tr data-id="${id}" tabindex="0" class="extra"><td class="sw"><i style="background:${ZONES[id].color}"></i></td><td>${ZONES[id].name}</td><td class="dm">${ZONES[id].short}</td><td class="ar">—</td></tr>`).join('');
+}).join('') + ['gate', 'garita', 'banos', 'descanso', 'camaras', 'verde', 'peatonal', 'segC', 'segM', 'garAlero', 'casetaT'].map(id => `<tr data-id="${id}" tabindex="0" class="extra"><td class="sw"><i style="background:${ZONES[id].color}"></i></td><td>${ZONES[id].name}</td><td class="dm">${ZONES[id].short}</td><td class="ar">—</td></tr>`).join('');
 const onRow = e => { const tr = e.target.closest('tr'); if (tr) selectZone(tr.dataset.id); };
 $('#zone-rows').addEventListener('click', onRow);
 $('#zone-rows').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRow(e); } });
@@ -966,7 +1080,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ptr, camera);
   const hit = ray.intersectObjects(pickables.filter(isShown), false)
-    .find(h => !(interior && h.object.material === wallMat));
+    .find(h => !(interior && wallMats.includes(h.object.material)));
   if (!hit) return;
   if (hit.object.userData.loc) selectLoc(hit.object.userData.loc, false);
   else if (hit.object.userData.zone) selectZone(hit.object.userData.zone, false);

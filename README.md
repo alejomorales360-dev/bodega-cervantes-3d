@@ -20,6 +20,9 @@ Renders en 4K (3840 × 2160) en la carpeta `renders/`:
 | Interior con ubicaciones A–F | `renders/3-bodega.jpg` |
 | Portones y alero | `renders/4-portones.jpg` |
 | Oficinas, descanso y área verde | `renders/5-oficinas.jpg` |
+| Bajo el alero (cerchas y portones) | `renders/6-alero.jpg` |
+| Bodega pequeña y portones traseros | `renders/7-bodega-pequena.jpg` |
+| Garita bajo el alero | `renders/8-garita-alero.jpg` |
 
 Para generar capturas en alta resolución desde el navegador, abre la página con `#hd` al final de la dirección (sombras y resolución más altas).
 
@@ -29,7 +32,9 @@ Para generar capturas en alta resolución desde el navegador, abre la página co
 
 - **Superficies según la planilla:** bodega principal (93,8 × 61,7 m), alero en voladizo (93,8 × 13,3 m), bodega pequeña (62,5 × 8 m), sector oficinas (15 × 30 m), estacionamiento (4,2 × 62,49 m), patio delantero (92 × 48 m) y patio trasero (100 × 13,3 m).
 - **Según el plano "Layout def":**
-  - 5 portones y 72 ubicaciones (A-1 a F-12).
+  - Muros de acero corrugado azul, 5 portones correderos hacia el alero y 5 portones traseros (1 a 4 a la bodega pequeña, 5 al patio trasero).
+  - 72 ubicaciones (A-1 a F-12) con paquetes de madera de 2,4 a 4,8 m.
+  - Alero en voladizo sobre cerchas de acero, con una garita de guardias en la esquina del fondo.
   - Portones vehiculares a Cervantes y a Juan Macaya, y portón peatonal a Pedro Montt.
   - Gate control con caseta y garita de guardias.
   - Baños de conductores bajo el alero.
@@ -44,7 +49,7 @@ Para generar capturas en alta resolución desde el navegador, abre la página co
 
 - Alturas: bodega de 10 m al alero y 12,5 m en la cumbrera, y alero a 8 m.
 - Tamaños de la garita, los baños, la garita de cámaras y las zonas seguras.
-- Las 5 marcas amarillas del muro del fondo del plano: ¿son portones traseros?
+- Uso de la caseta blanca del patio trasero.
 - A lo largo, las zonas suman 136,3 m, frente a los 140 m de Cervantes.
 
 ## Cómo editar
