@@ -23,6 +23,7 @@ Renders en 4K (3840 × 2160) en la carpeta `renders/`:
 | Bajo el alero (cerchas y portones) | `renders/6-alero.jpg` |
 | Bodega pequeña y portones traseros | `renders/7-bodega-pequena.jpg` |
 | Garita bajo el alero | `renders/8-garita-alero.jpg` |
+| Muro del fondo con portones traseros | `renders/9-fondo.jpg` |
 
 Para generar capturas en alta resolución desde el navegador, abre la página con `#hd` al final de la dirección (sombras y resolución más altas).
 
@@ -49,7 +50,6 @@ Para generar capturas en alta resolución desde el navegador, abre la página co
 
 - Alturas: bodega de 10 m al alero y 12,5 m en la cumbrera, y alero a 8 m.
 - Tamaños de la garita, los baños, la garita de cámaras y las zonas seguras.
-- Uso de la caseta blanca del patio trasero.
 - A lo largo, las zonas suman 136,3 m, frente a los 140 m de Cervantes.
 
 ## Cómo editar

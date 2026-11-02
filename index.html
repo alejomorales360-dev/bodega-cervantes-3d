@@ -253,7 +253,6 @@ const R = {
   segC:    { x0: 0.4,  x1: 6,    z0: 45.4,  z1: 49.7,   h: 0.4 },
   segM:    { x0: 94.4, x1: 99.6, z0: 28.3,  z1: 32.6,   h: 0.4 },
   garAlero:{ x0: 91.4, x1: 93.2, z0: 59.2,  z1: 61.0,   h: 2.6 },
-  casetaT: { x0: 71,   x1: 78,   z0: 131.2, z1: 135.8,  h: 3.4 },
   peatonal:{ x0: 88.6, x1: 90.6, z0: -0.2,  z1: 2.4,    h: 2.6 },
 };
 const ZONES = {
@@ -285,8 +284,6 @@ const ZONES = {
              note: 'Área verde al costado de los camarines, entre la oficina y el camarín de mujeres. El sendero peatonal llega hasta aquí.', short: 'junto a camarines' },
   garAlero:{ name: 'Garita bajo el alero', dims: 'esquina del alero, cerca del portón Macaya', area: null, color: '#eef1f3',
              note: 'Garita de guardias bajo el alero, en la esquina del fondo junto al muro de la bodega y cerca del portón Macaya. Es una caseta blanca prefabricada, de unos 1,8 × 1,8 m.', short: 'esquina alero' },
-  casetaT: { name: 'Caseta patio trasero', dims: 'frente al portón trasero 5', area: null, color: '#f1f1ee',
-             note: 'Construcción blanca en el patio trasero, frente a la salida del portón 5, con jaulas de cilindros al frente. El uso está por confirmar.', short: 'patio trasero' },
   peatonal:{ name: 'Portón peatonal', dims: 'entre la garita de cámaras y la oficina', area: null, color: '#f2c230',
              note: 'Acceso peatonal desde calle Pedro Montt, entre la garita de cámaras y la oficina. Entra directo a la zona de descanso. Ancho supuesto: 2 m.', short: 'a Pedro Montt' },
   segC:    { name: 'Zona segura Cervantes', dims: 'al costado del portón Cervantes', area: null, color: '#2e9d57',
@@ -527,11 +524,15 @@ const wallMats = [];
     box(site, 5.0, 0.02, 1.6, '#e5a900', x, 0.06, B.z0 - 1.0, { cast: false });
     label(site, `Portón ${i + 1}`, 'lbl tag', x, 6.4, B.z0 - 0.3);
     box(site, 5.0, 5.4, 0.12, null, x, 2.7, B.z1 + 0.06, { material: backDoorM, zone: 'bodega' });
+    box(site, 5.0, 5.4, 0.08, null, x, 2.7, B.z1 - 0.34, { material: backDoorM, cast: false });
+    box(site, 5.0, 5.4, 0.08, null, x, 2.7, B.z0 + 0.34, { material: openM, cast: false });
+    [-1, 1].forEach(sd => { box(site, 0.35, 5.6, 0.3, null, x + sd * 2.7, 2.8, B.z1 - 0.45, { material: jambM, cast: false }); box(site, 0.35, 5.6, 0.3, null, x + sd * 2.7, 2.8, B.z0 + 0.45, { material: jambM, cast: false }); });
+    label(site, `Portón trasero ${i + 1}`, 'lbl tag', x, 6.4, B.z1 + 0.3);
     [-1, 1].forEach(sd => box(site, 0.45, 5.6, 0.45, null, x + sd * 2.75, 2.8, B.z1 + 0.15, { material: jambM }));
   });
-  // interior columns at the nave lines, painted with hazard stripes
+  // one row of columns across the middle of the warehouse (Cervantes → Macaya), hazard-striped
   const colM = hazard(10);
-  for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) box(site, 0.5, H, 0.5, null, B.x0 + i * (bw / 6), H / 2, B.z0 + j * (bd / 6), { material: colM });
+  for (let i = 1; i < 6; i++) box(site, 0.5, H, 0.5, null, B.x0 + i * (bw / 6), H / 2, bcz, { material: colM });
   roofG = new THREE.Group(); site.add(roofG);
   const naves = 6, nw = bw / naves, rise = 2.5, roofMat = mat('#55698a', { roughness: 0.6, metalness: 0.25 });
   const sky = mat('#eef3f8', { emissive: '#b8c8da', emissiveIntensity: 0.25, roughness: 0.3 });
@@ -630,16 +631,10 @@ const wallMats = [];
     box(site, 0.05, 1.0, 1.0, '#1f2a36', G2.x0 - 0.03, 1.6, gz, { cast: false });
     box(site, 0.18, 1.0, 0.18, '#d6362b', G2.x0 - 0.5, 0.5, G2.z0 - 0.4);
   }
-  // --- Caseta del patio trasero + yellow pedestrian lines from portón 5
+  // --- Yellow pedestrian lines from portón trasero 5 into the patio trasero
   {
-    const C2 = R.casetaT, ccx = (C2.x0 + C2.x1) / 2, ccz = (C2.z0 + C2.z1) / 2;
-    rbox(site, C2, 3.0, '#f1f1ee', 0, { zone: 'casetaT' });
-    const rf = new THREE.Mesh(new THREE.BoxGeometry(C2.x1 - C2.x0 + 0.5, 0.15, C2.z1 - C2.z0 + 0.6), mat('#c9ccd0', { metalness: 0.4 }));
-    rf.position.set(ccx, 3.2, ccz); rf.rotation.x = 0.06; rf.castShadow = true; site.add(rf);
-    box(site, 1.0, 2.1, 0.06, '#5b6470', ccx + 1.5, 1.05, C2.z0 - 0.03, { cast: false });
-    [ccx - 2.4, ccx - 1.3].forEach(x => { box(site, 1.0, 1.8, 0.8, '#9aa3ad', x, 0.95, C2.z0 - 0.5); box(site, 1.02, 0.08, 0.82, '#3a4f6e', x, 1.86, C2.z0 - 0.5); });
-    floor(site, { x0: DOORS[4] - 1.0, x1: DOORS[4] - 0.75, z0: R.bodega.z1 + 0.3, z1: C2.z0 - 1 }, null, 0.06, null, mat('#f2c230'));
-    floor(site, { x0: DOORS[4] + 0.75, x1: DOORS[4] + 1.0, z0: R.bodega.z1 + 0.3, z1: C2.z0 - 1 }, null, 0.06, null, mat('#f2c230'));
+    floor(site, { x0: DOORS[4] - 1.0, x1: DOORS[4] - 0.75, z0: R.bodega.z1 + 0.3, z1: R.trasero.z1 - 1 }, null, 0.06, null, mat('#f2c230'));
+    floor(site, { x0: DOORS[4] + 0.75, x1: DOORS[4] + 1.0, z0: R.bodega.z1 + 0.3, z1: R.trasero.z1 - 1 }, null, 0.06, null, mat('#f2c230'));
   }
 
   // --- Zonas seguras al costado de ambos portones
@@ -718,7 +713,6 @@ const wallMats = [];
   lbl('segC', 3.2, 2.4, 47.5);
   lbl('segM', 97, 2.4, 30.4);
   lbl('garAlero', 92.3, 4.4, 60.1);
-  lbl('casetaT', 74.5, 5.2, 133.5);
   label(site, 'Sendero peatonal', 'lbl tag', 40, 1.2, 1.3);
   label(site, 'Oficina', 'lbl tag', (of.x0 + of.x1) / 2, 4.8, 6.5);
   label(site, 'Camarines · Pañol · Camarín mujer', 'lbl tag', 89, 4.4, 20.6);
@@ -1039,7 +1033,7 @@ function applyToggles() {
 $('#zone-rows').innerHTML = ORDER.map(id => {
   const Z = ZONES[id];
   return `<tr data-id="${id}" tabindex="0"><td class="sw"><i style="background:${Z.color}"></i></td><td>${Z.name}</td><td class="dm">${Z.dims}</td><td class="ar">${fmt(Z.area, Z.area % 1 ? 2 : 0)} m²</td></tr>`;
-}).join('') + ['gate', 'garita', 'banos', 'descanso', 'camaras', 'verde', 'peatonal', 'segC', 'segM', 'garAlero', 'casetaT'].map(id => `<tr data-id="${id}" tabindex="0" class="extra"><td class="sw"><i style="background:${ZONES[id].color}"></i></td><td>${ZONES[id].name}</td><td class="dm">${ZONES[id].short}</td><td class="ar">—</td></tr>`).join('');
+}).join('') + ['gate', 'garita', 'banos', 'descanso', 'camaras', 'verde', 'peatonal', 'segC', 'segM', 'garAlero'].map(id => `<tr data-id="${id}" tabindex="0" class="extra"><td class="sw"><i style="background:${ZONES[id].color}"></i></td><td>${ZONES[id].name}</td><td class="dm">${ZONES[id].short}</td><td class="ar">—</td></tr>`).join('');
 const onRow = e => { const tr = e.target.closest('tr'); if (tr) selectZone(tr.dataset.id); };
 $('#zone-rows').addEventListener('click', onRow);
 $('#zone-rows').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRow(e); } });
