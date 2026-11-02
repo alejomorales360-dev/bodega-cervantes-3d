@@ -135,6 +135,12 @@ ul.list li+li{margin-top:5px}
   .view{height:62vh;min-height:340px}
   .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
 }
+.tools{display:flex;gap:6px}
+.tools button{border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+.tools button:hover{border-color:var(--ink)}
+.tools button:disabled{opacity:.55;cursor:progress}
+#b-pdf{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;z-index:5;max-width:calc(100% - 32px);text-align:center}
 </style>
 </head>
 <body>
@@ -151,10 +157,15 @@ ul.list li+li{margin-top:5px}
     <button id="v-iso" type="button" aria-pressed="false">Isométrica</button>
     <button id="v-interior" type="button" aria-pressed="false">Interior</button>
   </div>
+  <div class="tools">
+    <button id="b-shot" type="button" title="Descarga una imagen PNG en alta resolución de la vista actual">Captura</button>
+    <button id="b-pdf" type="button" title="Descarga un informe PDF con vistas, superficies y ubicaciones">Informe PDF</button>
+  </div>
 </header>
 
 <main class="app">
   <div class="view" id="view">
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <div class="hint" id="hint">Arrastra para girar · rueda o pellizco para zoom · toca una zona o ubicación</div>
     <div class="chips">
       <label class="chip"><input id="t-roof" type="checkbox" checked> Techo</label>
@@ -1229,7 +1240,193 @@ function updateCompass() {
   $('#needle').style.transform = `rotate(${Math.atan2(north.dot(right), north.dot(screenUp)) * 180 / Math.PI}deg)`;
 }
 
-window.bodega3d = { camera, controls, setView, fly, L2W, selectZone, selectLoc };
+/* ---------- Export: screenshot (PNG) and PDF report ---------- */
+const toast = (msg, ms = 2600) => { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); if (ms) toast._t = setTimeout(() => (t.hidden = true), ms); };
+const stamp = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; };
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+// render the scene at w×h, optionally from a given view, and return a canvas (restores everything afterwards)
+function snapshot({ w, h, view, pos, target, roofless = false, labels = false }) {
+  anim = null;
+  const prev = { p: camera.position.clone(), t: controls.target.clone(), aspect: camera.aspect, pr: renderer.getPixelRatio(), size: renderer.getSize(new THREE.Vector2()), interior, iso };
+  if (view) { const [p, t] = views[view](); camera.position.copy(p); controls.target.copy(t); interior = view === 'interior'; iso = view === 'iso' || roofless; }
+  else if (pos) { camera.position.copy(pos); controls.target.copy(target); interior = false; iso = roofless; }
+  applyToggles();
+  camera.lookAt(controls.target);
+  const scale = w / prev.size.x;
+  renderer.setPixelRatio(1); renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.render(scene, camera);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.drawImage(renderer.domElement, 0, 0, w, h);
+  if (labels) { labelR.render(scene, camera); drawLabels(g, scale); }
+  renderer.setPixelRatio(prev.pr); renderer.setSize(prev.size.x, prev.size.y);
+  camera.position.copy(prev.p); controls.target.copy(prev.t); camera.aspect = prev.aspect; camera.updateProjectionMatrix();
+  interior = prev.interior; iso = prev.iso; applyToggles(); controls.update();
+  return c;
+}
+// paint the visible HTML labels onto the capture
+function drawLabels(g, scale) {
+  const base = labelR.domElement.getBoundingClientRect();
+  labelR.domElement.querySelectorAll('.lbl, .dim, .street').forEach(el => {
+    if (el.hidden || el.style.display === 'none') return;
+    const cs = getComputedStyle(el); if (cs.display === 'none') return;
+    const r = el.getBoundingClientRect(); if (!r.width) return;
+    const x = (r.left - base.left) * scale, y = (r.top - base.top) * scale, w = r.width * scale, h = r.height * scale;
+    if (x + w < 0 || y + h < 0 || x > g.canvas.width || y > g.canvas.height) return;
+    g.save();
+    if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+      g.fillStyle = cs.backgroundColor; g.strokeStyle = cs.borderTopColor; g.lineWidth = Math.max(1, scale);
+      g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, 3 * scale) : g.rect(x, y, w, h); g.fill(); if (parseFloat(cs.borderTopWidth)) g.stroke();
+    }
+    const lines = el.innerText.split('\n').filter(Boolean);
+    g.fillStyle = cs.color; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (el.classList.contains('street')) { g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 3 * scale; }
+    lines.forEach((ln, i) => {
+      const fs = parseFloat(cs.fontSize) * scale * (i && lines.length > 1 ? 0.9 : 1);
+      g.font = `${i ? 500 : cs.fontWeight} ${fs}px ${cs.fontFamily}`;
+      g.fillText(ln, x + w / 2, y + h * (i + 0.5) / lines.length);
+    });
+    g.restore();
+  });
+}
+function captureView() {
+  const size = renderer.getSize(new THREE.Vector2()), k = Math.min(3, 3840 / size.x);
+  const c = snapshot({ w: Math.round(size.x * k), h: Math.round(size.y * k), pos: camera.position.clone(), target: controls.target.clone(), roofless: iso || !$('#t-roof').checked, labels: true });
+  if (interior) { /* interior state is restored by snapshot */ }
+  const g = c.getContext('2d'), fs = Math.round(14 * k);
+  g.fillStyle = 'rgba(20,24,29,.72)'; g.fillRect(0, c.height - fs * 2.2, c.width, fs * 2.2);
+  g.fillStyle = '#fff'; g.font = `600 ${fs}px Archivo, Arial, sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText(`Bodega Cervantes · ${new Date().toLocaleString('es-CL')}`, fs, c.height - fs * 1.1);
+  c.toBlob(b => { download(b, `Bodega-Cervantes_${stamp()}.png`); toast('Captura descargada'); }, 'image/png');
+}
+let jsPDFLoader;
+const loadJsPDF = () => jsPDFLoader ||= new Promise((ok, fail) => {
+  if (window.jspdf) return ok(window.jspdf.jsPDF);
+  const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload = () => ok(window.jspdf.jsPDF); s.onerror = () => { jsPDFLoader = null; fail(new Error('No se pudo cargar el generador de PDF. Revisa tu conexión a internet e inténtalo de nuevo.')); };
+  document.head.appendChild(s);
+});
+async function buildReport() {
+  toast('Generando informe…', 0);
+  let JsPDF; try { JsPDF = await loadJsPDF(); } catch (e) { toast(e.message, 5000); return; }
+  await new Promise(r => setTimeout(r, 30));
+  const W2 = 1800, H2 = 1000, img = o => snapshot({ w: W2, h: H2, ...o }).toDataURL('image/jpeg', 0.88);
+  const shots = {
+    iso: img({ view: 'iso' }),
+    planta: img({ view: 'planta', roofless: true }),
+    general: img({ view: 'general' }),
+    frente: img({ view: 'frente' }),
+    interior: img({ view: 'interior' }),
+    patio: img({ pos: L2W(8, 30, -14), target: L2W(46, 2, 34) }),
+    oficinas: img({ pos: L2W(66, 24, -12), target: L2W(91, 0, 15) }),
+    alero: img({ pos: L2W(60, 3.2, 40), target: L2W(86, 5.5, 59) }),
+  };
+  const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const PW = 297, PH = 210, M = 12, ink = [27, 33, 41], muted = [91, 102, 114], steel = [36, 80, 127], mark = [229, 169, 0];
+  const today = new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
+  let page = 1;
+  const footer = () => {
+    doc.setFontSize(8); doc.setTextColor(...muted); doc.setFont('helvetica', 'normal');
+    doc.text('Bodega Cervantes · informe del layout 3D · ' + today, M, PH - 6);
+    doc.text('https://alejomorales360-dev.github.io/bodega-cervantes-3d/', PW / 2, PH - 6, { align: 'center' });
+    doc.text('Página ' + page, PW - M, PH - 6, { align: 'right' });
+  };
+  const heading = (t, sub) => {
+    doc.setFillColor(...mark); doc.rect(M, M, 3, 9, 'F');
+    doc.setTextColor(...ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.text(t, M + 6, M + 7);
+    if (sub) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...muted); doc.text(sub, M + 6, M + 13); }
+  };
+  const newPage = () => { footer(); doc.addPage(); page++; };
+  const picture = (data, x, y, w, caption) => { const h = w * H2 / W2; doc.addImage(data, 'JPEG', x, y, w, h); doc.setDrawColor(210, 216, 222); doc.rect(x, y, w, h); if (caption) { doc.setFontSize(9); doc.setTextColor(...muted); doc.setFont('helvetica', 'normal'); doc.text(caption, x, y + h + 4.5); } return h; };
+
+  // 1. cover
+  doc.setTextColor(...ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(26); doc.text('Bodega Cervantes', M, M + 10);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(...muted);
+  doc.text('Informe del layout 3D · Pedro Montt × Cervantes × Juan Macaya · terreno de 100 × 140 m (14.000 m²) · ' + today, M, M + 17);
+  picture(shots.iso, M, M + 23, PW - 2 * M, 'Vista isométrica general, sin techo.');
+  newPage();
+
+  // 2. surfaces table + plan
+  heading('Superficies', 'Medidas según la planilla "Medidas bodega Cervantes".');
+  let y = M + 22; const cols = [M, M + 62, M + 102, M + 130];
+  doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...muted);
+  ['Zona', 'Medidas', 'Superficie', '% terreno'].forEach((t, i) => doc.text(t, cols[i] + (i > 1 ? 24 : 0), y, { align: i > 1 ? 'right' : 'left' }));
+  doc.setDrawColor(...ink); doc.line(M, y + 2, M + 155, y + 2); y += 8;
+  doc.setFont('helvetica', 'normal'); doc.setTextColor(...ink);
+  ORDER.forEach(id => {
+    const Z = ZONES[id], c = new THREE.Color(Z.color);
+    doc.setFillColor(c.r * 255, c.g * 255, c.b * 255); doc.rect(M, y - 3, 3, 3, 'F');
+    doc.text(Z.name, M + 5, y); doc.text(Z.dims, cols[1], y);
+    doc.text(fmt(Z.area, Z.area % 1 ? 2 : 0) + ' m²', cols[2] + 24, y, { align: 'right' });
+    doc.text(fmt(Z.area / 140, 1) + ' %', cols[3] + 24, y, { align: 'right' });
+    doc.setDrawColor(210, 216, 222); doc.line(M, y + 2.5, M + 155, y + 2.5); y += 8;
+  });
+  doc.setFont('helvetica', 'bold'); doc.setDrawColor(...ink); doc.line(M, y - 4, M + 155, y - 4);
+  doc.text('Total terreno', M + 5, y); doc.text('100 × 140 m', cols[1], y); doc.text('14.000 m²', cols[2] + 24, y, { align: 'right' });
+  y += 12; doc.setFontSize(11); doc.text('Otros elementos', M, y); y += 6;
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  ['gate', 'garita', 'garAlero', 'banos', 'descanso', 'camaras', 'verde', 'peatonal', 'segC', 'segM'].forEach(id => {
+    const Z = ZONES[id]; if (!Z) return;
+    doc.setTextColor(...ink); doc.text('• ' + Z.name, M, y); doc.setTextColor(...muted); doc.text(Z.short || Z.dims, M + 62, y); y += 5.4;
+  });
+  picture(shots.planta, M + 162, M + 18, PW - M * 2 - 162, 'Planta: Pedro Montt abajo, Cervantes a la izquierda.');
+  newPage();
+
+  // 3. views
+  heading('Vistas del modelo');
+  const gw = (PW - 2 * M - 8) / 2, gh = gw * H2 / W2;
+  [['general', 'Vista general'], ['frente', 'Frente, desde Pedro Montt'], ['patio', 'Patio de maniobras y contenedores'], ['interior', 'Interior de la bodega']].forEach(([k, cap], i) => {
+    picture(shots[k], M + (i % 2) * (gw + 8), M + 16 + Math.floor(i / 2) * (gh + 10), gw, cap);
+  });
+  newPage();
+  heading('Detalles');
+  [['oficinas', 'Sector oficinas, descanso y jardín'], ['alero', 'Bajo el alero: portones y garita']].forEach(([k, cap], i) => picture(shots[k], M + i * (gw + 8), M + 16, gw, cap));
+  // locations grid
+  y = M + 16 + gh + 16;
+  doc.setTextColor(...ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Ubicaciones A–F (medidas aproximadas, a escala del plano)', M, y); y += 5;
+  const cw = (PW - 2 * M) / 6, ch = 4.6;
+  doc.setFontSize(7.5);
+  for (let r = 12; r >= 1; r--) {
+    Object.keys(COLS).forEach((c, i) => {
+      const L = LOCS[`${c}-${r}`], a = (L.x1 - L.x0) * (L.z1 - L.z0), sel = selected === 'loc:' + c + '-' + r;
+      doc.setFillColor(...(sel ? mark : [226, 235, 246])); doc.rect(M + i * cw + 0.4, y, cw - 0.8, ch - 0.6, 'F');
+      doc.setTextColor(...ink); doc.setFont('helvetica', 'bold'); doc.text(`${c}-${r}`, M + i * cw + 2, y + 3.1);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...muted); doc.text(`${fmt(L.x1 - L.x0, 1)} × ${fmt(L.z1 - L.z0, 1)} m · ${fmt(a)} m²`, M + (i + 1) * cw - 2, y + 3.1, { align: 'right' });
+    });
+    y += ch;
+  }
+  newPage();
+
+  // 4. assumptions and pending items (from the panel)
+  heading('Supuestos y puntos por confirmar');
+  y = M + 22;
+  const lists = [...document.querySelectorAll('.panel section')].filter(sct => /Supuestos|Por confirmar/.test(sct.querySelector('h2')?.textContent || ''));
+  lists.forEach(sct => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...ink); doc.text(sct.querySelector('h2').textContent, M, y); y += 6;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    sct.querySelectorAll('li').forEach(li => { const ls = doc.splitTextToSize('• ' + li.textContent.trim(), PW - 2 * M - 10); doc.text(ls, M + 2, y); y += ls.length * 4.6 + 1.2; });
+    y += 5;
+  });
+  if (selected) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Selección al generar el informe', M, y); y += 6;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    const txt = $('#info').innerText.replace(/\n+/g, ' · '); doc.text(doc.splitTextToSize(txt, PW - 2 * M - 10), M + 2, y);
+  }
+  footer();
+  download(doc.output('blob'), `Informe-Bodega-Cervantes_${stamp()}.pdf`);
+  toast('Informe PDF descargado');
+}
+$('#b-shot').addEventListener('click', () => { try { captureView(); } catch (e) { console.error(e); toast('No se pudo generar la captura en este navegador.', 4000); } });
+$('#b-pdf').addEventListener('click', async e => {
+  const b = e.currentTarget; b.disabled = true;
+  try { await buildReport(); } catch (err) { console.error(err); toast('No se pudo generar el informe. Inténtalo de nuevo.', 4000); }
+  finally { b.disabled = false; }
+});
+
+window.bodega3d = { camera, controls, setView, fly, L2W, selectZone, selectLoc, snapshot, buildReport };
 applyToggles();
 const [p0, t0] = views.general();
 camera.position.copy(p0); controls.target.copy(t0);

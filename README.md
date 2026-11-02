@@ -9,6 +9,20 @@ Es una sola página web (`index.html`), sin instalación ni compilación. Usa [t
 - **En línea:** https://alejomorales360-dev.github.io/bodega-cervantes-3d/ (se publica solo con cada cambio en `main`).
 - **En tu computador:** abre `index.html` en el navegador. Necesita internet para cargar three.js y las fuentes.
 
+## Capturas e informes
+
+En la barra superior de la página hay dos botones:
+
+- **Captura:** descarga un PNG en alta resolución (hasta 4K) de la vista actual. Incluye las etiquetas y cotas visibles, con la fecha y la hora al pie.
+- **Informe PDF:** descarga un informe A4 apaisado de 5 páginas:
+  1. Portada con la vista isométrica.
+  2. Tabla de superficies, otros elementos y planta.
+  3. Cuatro vistas del modelo.
+  4. Detalles y las 72 ubicaciones A–F con medidas aproximadas.
+  5. Supuestos y puntos por confirmar, y la selección actual si hay una.
+
+  El PDF se genera en el navegador con jsPDF 2.5.1 (cdnjs), sin enviar datos a ningún servidor.
+
 ## Imágenes
 
 Renders en 4K (3840 × 2160) en la carpeta `renders/`:
