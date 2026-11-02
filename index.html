@@ -248,12 +248,12 @@ const R = {
   garita:  { x0: 6,    x1: 8,    z0: 26,    z1: 28,     h: 2.6 },
   banos:   { x0: 0.6,  x1: 5.6,  z0: 50,    z1: 58,     h: 3.2 },
   descanso:{ x0: 85.2, x1: 91.8, z0: 2.4,   z1: 12.7,   h: 1.2 },
-  camaras: { x0: 85.3, x1: 87.3, z0: 2.5,   z1: 4.5,    h: 2.6 },
+  camaras: { x0: 85.4, x1: 88.7, z0: 0.35,  z1: 2.75,   h: 2.7 },
   verde:   { x0: 93.4, x1: 99.7, z0: 13.2,  z1: 27.2,   h: 0.8 },
   segC:    { x0: 0.4,  x1: 6,    z0: 45.4,  z1: 49.7,   h: 0.4 },
   segM:    { x0: 94.4, x1: 99.6, z0: 28.3,  z1: 32.6,   h: 0.4 },
   garAlero:{ x0: 91.4, x1: 93.2, z0: 59.2,  z1: 61.0,   h: 2.6 },
-  peatonal:{ x0: 88.6, x1: 90.6, z0: -0.2,  z1: 2.4,    h: 2.6 },
+  peatonal:{ x0: 88.9, x1: 91.8, z0: -0.2,  z1: 2.4,    h: 2.6 },
 };
 const ZONES = {
   bodega:  { name: 'Bodega principal', dims: '93,8 × 61,7 m', area: 5787,   color: '#55698a',
@@ -277,15 +277,15 @@ const ZONES = {
   banos:   { name: 'Baños de conductores', dims: 'bajo el alero, junto a la muralla de Cervantes', area: null, color: '#7fa7c9',
              note: 'Baños para los conductores, bajo el alero y apegados a la muralla de calle Cervantes. Tamaño supuesto: 5 × 8 m.', short: 'bajo el alero' },
   descanso:{ name: 'Zona de descanso', dims: 'frente a la oficina, bordeada por el sendero', area: null, color: '#c9c1b0',
-             note: 'Zona de descanso con bancas frente a la oficina, bordeada por el sendero peatonal.', short: 'frente a oficina' },
+             note: 'Zona de descanso techada frente a la oficina: bancas de madera, pasto sintético, maceteros y pizarras. Bordeada por el sendero peatonal.', short: 'frente a oficina' },
   camaras: { name: 'Garita de cámaras', dims: 'junto a la zona de descanso, pegada al sendero', area: null, color: '#3d4a5c',
-             note: 'Garita donde están los monitores de las cámaras de seguridad. Tamaño supuesto: 2 × 2 m.', short: 'junto al sendero' },
+             note: 'Caseta prefabricada blanca de dos módulos con ventanas correderas, junto al portón peatonal y al muro de Pedro Montt. Ahí están los monitores de las cámaras.', short: 'junto al sendero' },
   verde:   { name: 'Área verde', dims: 'al costado de los camarines', area: null, color: '#6f9a4f',
-             note: 'Área verde al costado de los camarines, entre la oficina y el camarín de mujeres. El sendero peatonal llega hasta aquí.', short: 'junto a camarines' },
+             note: 'Jardín entre los camarines y el muro de Juan Macaya, frente a la oficina: cipreses, árboles, arbustos, macizo de flores redondo, mástiles y reja azul con puerta.', short: 'junto a camarines' },
   garAlero:{ name: 'Garita bajo el alero', dims: 'esquina del alero, cerca del portón Macaya', area: null, color: '#eef1f3',
              note: 'Garita de guardias bajo el alero, en la esquina del fondo junto al muro de la bodega y cerca del portón Macaya. Es una caseta blanca prefabricada, de unos 1,8 × 1,8 m.', short: 'esquina alero' },
   peatonal:{ name: 'Portón peatonal', dims: 'entre la garita de cámaras y la oficina', area: null, color: '#f2c230',
-             note: 'Acceso peatonal desde calle Pedro Montt, entre la garita de cámaras y la oficina. Entra directo a la zona de descanso. Ancho supuesto: 2 m.', short: 'a Pedro Montt' },
+             note: 'Acceso peatonal desde calle Pedro Montt, entre la garita de cámaras y la oficina. Entra directo a la zona de descanso. Es un portón de madera roja de dos hojas, junto a la garita de cámaras.', short: 'a Pedro Montt' },
   segC:    { name: 'Zona segura Cervantes', dims: 'al costado del portón Cervantes', area: null, color: '#2e9d57',
              note: 'Zona segura para peatones al costado del portón Cervantes, junto a los baños de conductores. Tamaño supuesto: 5,6 × 4,3 m.', short: 'portón Cervantes' },
   segM:    { name: 'Zona segura Macaya', dims: 'al costado del portón Macaya', area: null, color: '#2e9d57',
@@ -457,25 +457,40 @@ const wallMats = [];
   floor(site, O, '#9d9a92', 0.035, 'oficina');
 
   // yellow hatched band (as drawn in the plan)
-  const hatch = hatchTexture();
+  const bars = (vertical) => {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d'); g.fillStyle = '#5d6168'; g.fillRect(0, 0, 64, 64);
+    g.fillStyle = '#e9c45a'; vertical ? g.fillRect(4, 4, 34, 56) : g.fillRect(4, 4, 56, 34);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+  };
   // sendero peatonal: along Pedro Montt and Cervantes, then up beside the office sector and into the rest area
   [[0.4, 85, 0.4, 2.2], [0.4, 2.2, 2.2, 26], [83.2, 85, 2.2, 13.9], [85, 93.3, 12.9, 13.9]].forEach(([x0, x1, z0, z1]) => {
-    const t = hatch.clone(); t.needsUpdate = true; t.repeat.set((x1 - x0) / 2, (z1 - z0) / 2);
+    const alongX = (x1 - x0) > (z1 - z0), t = bars(alongX);
+    alongX ? t.repeat.set((x1 - x0) / 1.1, 1) : t.repeat.set(1, (z1 - z0) / 1.1);
     floor(site, { x0, x1, z0, z1 }, null, 0.05, null, new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 }));
   });
+  // yellow railing and cones along the walkway near the office sector, tsunami-route sign on the Cervantes wall
+  for (let x = 68; x <= 82; x += 2) box(site, 0.08, 1.0, 0.08, '#e3b51e', x, 0.5, 2.35);
+  [0.55, 0.95].forEach(y => box(site, 14, 0.06, 0.06, '#e3b51e', 75, y, 2.35, { cast: false }));
+  [70.5, 75.5, 80.5].forEach(x => { const cn = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 12), mat('#ff6a1a')); cn.position.set(x, 0.35, 3.0); cn.castShadow = true; site.add(cn); });
+  box(site, 0.06, 1.2, 0.9, '#1f7a4d', 0.2, 1.7, 6, { cast: false });
 
   // perimeter wall with portones on Cervantes (z 32–45) and Juan Macaya (z 33–45)
   const pw = '#cfcac0', WH = 2.6;
-  box(site, 88.6, WH, 0.25, pw, 44.3, WH / 2, 0);
-  box(site, W - 90.6, WH, 0.25, pw, (90.6 + W) / 2, WH / 2, 0);
+  box(site, 88.9, WH, 0.25, pw, 44.45, WH / 2, 0);
+  box(site, W - 91.8, WH, 0.25, pw, (91.8 + W) / 2, WH / 2, 0);
   box(site, W, WH, 0.25, pw, CX, WH / 2, D);
   // pedestrian gate on Pedro Montt
-  [88.6, 90.6].forEach(x => box(site, 0.3, 2.9, 0.3, null, x, 1.45, 0, { material: mat('#f2c230'), zone: 'peatonal' }));
-  const leaf = new THREE.Group();
-  box(leaf, 1.9, 0.08, 0.06, '#55595f', 0.95, 2.1, 0); box(leaf, 1.9, 0.08, 0.06, '#55595f', 0.95, 0.15, 0);
-  for (let i = 0; i <= 9; i++) box(leaf, 0.04, 1.95, 0.04, '#55595f', 0.05 + i * 0.2, 1.12, 0, { cast: false });
-  leaf.position.set(88.75, 0, 0.1); leaf.rotation.y = -1.1; site.add(leaf);
-  floor(site, { x0: 88.6, x1: 90.6, z0: 0.15, z1: 2.4 }, '#c9c1b0', 0.075);
+  {
+    const wood = mat('#a8432c', { roughness: 0.8 }), frame = mat('#2a3f66');
+    [88.9, 90.35, 91.8].forEach(x => box(site, 0.18, 2.6, 0.18, null, x, 1.3, 0, { material: frame, zone: 'peatonal' }));
+    [89.62, 91.08].forEach(cx => {
+      box(site, 1.3, 1.9, 0.08, null, cx, 1.15, 0.05, { material: wood, zone: 'peatonal' });
+      for (let k = -2; k <= 2; k++) box(site, 0.03, 1.9, 0.1, '#7e2f1f', cx + k * 0.26, 1.15, 0.06, { cast: false });
+      [0.3, 2.0].forEach(y => box(site, 1.3, 0.06, 0.1, null, cx, y, 0.06, { material: frame, cast: false }));
+    });
+    floor(site, { x0: 88.9, x1: 91.8, z0: 0.15, z1: 2.4 }, '#c9c1b0', 0.075);
+  }
   box(site, 0.25, WH, 32, pw, 0, WH / 2, 16);
   box(site, 0.25, WH, D - 45, pw, 0, WH / 2, 45 + (D - 45) / 2);
   box(site, 0.25, WH, 33, pw, W, WH / 2, 16.5);
@@ -604,10 +619,26 @@ const wallMats = [];
 
   // --- Sector oficinas: oficina + camarines / pañol / camarín mujer
   const of = { x0: 92, x1: 99.7, z0: 0.3, z1: 12.8 };
-  rbox(site, of, 3.6, '#bcd3e6', 0, { zone: 'oficina' });
-  box(site, of.x1 - of.x0 + 0.3, 0.3, of.z1 - of.z0 + 0.3, '#8fa9c2', (of.x0 + of.x1) / 2, 3.75, (of.z0 + of.z1) / 2, { zone: 'oficina' });
-  box(site, 0.08, 1.3, 10, '#2c3a4b', of.x0 - 0.04, 2, (of.z0 + of.z1) / 2, { cast: false });
-  box(site, 6, 1.3, 0.08, '#2c3a4b', (of.x0 + of.x1) / 2, 2, of.z1 + 0.04, { cast: false });
+  {
+    const white = mat('#ecebe6'), ofw = of.x1 - of.x0, ocx = (of.x0 + of.x1) / 2, rail = mat('#2a3f66'), dark = mat('#2c3a4b');
+    rbox(site, of, 3.0, null, 0, { zone: 'oficina', material: white });                                   // ground floor
+    rbox(site, { x0: of.x0, x1: of.x1, z0: of.z0, z1: of.z1 - 2.2 }, 2.8, null, 3.0, { zone: 'oficina', material: white }); // upper floor
+    box(site, ofw, 0.2, 2.2, null, ocx, 3.1, of.z1 - 1.1, { material: white });                       // balcony slab
+    box(site, ofw, 0.06, 0.06, null, ocx, 4.15, of.z1 - 0.05, { material: rail, cast: false });
+    for (let x = of.x0 + 0.2; x < of.x1; x += 0.35) box(site, 0.04, 1.0, 0.04, null, x, 3.7, of.z1 - 0.05, { material: rail, cast: false });
+    const s2 = new THREE.Shape(); s2.moveTo(0, 0); s2.lineTo(ofw + 0.8, 0); s2.lineTo((ofw + 0.8) / 2, 1.8); s2.closePath();
+    const rf = new THREE.Mesh(new THREE.ExtrudeGeometry(s2, { depth: of.z1 - of.z0 + 0.8, bevelEnabled: false }), mat('#d9dcdf', { roughness: 0.6 }));
+    rf.position.set(of.x0 - 0.4, 5.8, of.z0 - 0.2); rf.castShadow = true; rf.userData.zone = 'oficina'; pickables.push(rf); roofG.add(rf);
+    // outside stair up to the balcony, door under it, barred window
+    const st = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.35, 1.1), mat('#5b3b2e')); st.position.set(of.x0 + 1.6, 1.5, of.z1 + 0.6); st.rotation.z = Math.atan2(3, 3); st.castShadow = true; site.add(st);
+    const hr = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.05, 0.05), rail); hr.position.set(of.x0 + 1.6, 2.4, of.z1 + 1.15); hr.rotation.z = Math.atan2(3, 3); site.add(hr);
+    box(site, 0.9, 2.1, 0.06, null, of.x0 + 4.6, 1.05, of.z1 + 0.03, { material: dark, cast: false });
+    box(site, 1.4, 1.0, 0.06, null, of.x0 + 6.4, 1.6, of.z1 + 0.03, { material: dark, cast: false });
+    for (let k = 0; k < 6; k++) box(site, 0.03, 1.1, 0.08, null, of.x0 + 5.75 + k * 0.26, 1.6, of.z1 + 0.06, { material: rail, cast: false });
+    box(site, 0.9, 2.0, 0.06, null, of.x0 + 4.2, 4.0, of.z1 - 2.17, { material: dark, cast: false });
+    box(site, 0.06, 1.0, 3.0, null, of.x0 - 0.03, 1.6, (of.z0 + of.z1) / 2, { material: dark, cast: false });
+    box(site, 0.06, 1.0, 3.0, null, of.x0 - 0.03, 4.4, (of.z0 + of.z1) / 2 - 1, { material: dark, cast: false });
+  }
   rbox(site, { x0: 85, x1: 93, z0: 14, z1: 21.5 }, 3, '#eeeeea', 0, { zone: 'oficina' });
   rbox(site, { x0: 85, x1: 93, z0: 21.5, z1: 24.8 }, 3, '#e6e6e1', 0, { zone: 'oficina' });
   rbox(site, { x0: 85, x1: 93, z0: 24.8, z1: 27.2 }, 3, '#eeeeea', 0, { zone: 'oficina' });
@@ -647,11 +678,21 @@ const wallMats = [];
   // --- Pedestrian path (double yellow line) from the alero to the camarines building, and details seen in the photo
   {
     const yl = mat('#e9b91f');
-    floor(site, { x0: 85.9, x1: 86.25, z0: 28.4, z1: R.alero.z1 - 1.15 }, null, 0.062, null, yl);
-    floor(site, { x0: 87.35, x1: 87.7, z0: 28.4, z1: R.alero.z1 - 1.15 }, null, 0.062, null, yl);
+    floor(site, { x0: 83.8, x1: 84.12, z0: 27.6, z1: R.alero.z1 - 1.15 }, null, 0.062, null, yl);
+    floor(site, { x0: 84.68, x1: 85.0, z0: 27.6, z1: R.alero.z1 - 1.15 }, null, 0.062, null, yl);
+    // concrete walkway along the camarines (rest area → alero), with a blue fence and shrubs toward the yard
+    floor(site, { x0: 83.7, x1: 85, z0: 13.9, z1: 27.6 }, '#c4c0b6', 0.07);
+    const fenceM = mat('#3d6f8f', { metalness: 0.3 });
+    [0.15, 1.05].forEach(y => box(site, 0.05, 0.05, 13.4, null, 83.6, y, 20.7, { material: fenceM, cast: false }));
+    for (let z = 14.1; z < 27.4; z += 0.22) box(site, 0.03, 1.15, 0.03, null, 83.6, 0.6, z, { material: fenceM, cast: false });
+    for (let z = 15; z < 27; z += 2.6) { const sh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6, 1), mat('#4d7a3c', { flatShading: true })); sh.position.set(83.0, 0.5, z); sh.castShadow = true; site.add(sh); }
+    for (let z = 15.5; z < 26.5; z += 3.4) {
+      box(site, 0.06, 0.6, 2.0, '#2c3a4b', 84.97, 2.3, z, { cast: false });
+      for (let k = 0; k < 8; k++) box(site, 0.02, 0.62, 0.02, '#2a3f66', 84.95, 2.3, z - 0.9 + k * 0.26, { cast: false });
+    }
     // concrete step along the camarines front, yellow steps at the path end
     box(site, 8.4, 0.2, 1.2, '#b9b5ac', 89, 0.1, 27.8);
-    box(site, 1.4, 0.35, 0.5, '#f2c230', 86.8, 0.17, 28.6);
+    box(site, 1.4, 0.35, 0.5, '#f2c230', 84.4, 0.17, 28.3);
     // door and two gas-cylinder cages in front of the building
     box(site, 1.1, 2.2, 0.06, '#5b6470', 88.4, 1.3, 27.23, { cast: false });
     [90.0, 91.3].forEach(x => {
@@ -660,13 +701,8 @@ const wallMats = [];
       box(site, 0.35, 0.35, 0.02, '#d6362b', x, 1.7, 27.54, { cast: false });
     });
     // "PARE · MIRE Y ESCUCHE" stop sign at the end of the path
-    box(site, 0.06, 2.0, 0.06, '#55595f', 86.6, 1.0, 28.9);
-    const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.04, 8), mat('#d6362b')); stop.rotation.x = Math.PI / 2; stop.rotation.y = Math.PI / 8; stop.position.set(86.6, 2.1, 28.92); site.add(stop);
-    // flagpoles and cypresses beside the building
-    [93.8, 94.6, 95.4].forEach(x => box(site, 0.1, 8, 0.1, '#e8e8e8', x, 4, 27.9));
-    [[93.6, 25.4], [93.6, 22.6], [93.6, 19.8]].forEach(([x, z]) => {
-      const c = new THREE.Mesh(new THREE.ConeGeometry(0.7, 6, 10), mat('#2f5a2c', { flatShading: true })); c.position.set(x, 3.4, z); c.castShadow = true; site.add(c);
-    });
+    box(site, 0.06, 2.0, 0.06, '#55595f', 83.4, 1.0, 28.4);
+    const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.04, 8), mat('#d6362b')); stop.rotation.x = Math.PI / 2; stop.rotation.y = Math.PI / 8; stop.position.set(83.4, 2.1, 28.42); site.add(stop);
     // waste bin
     box(site, 1.2, 1.3, 1.0, '#2b2e33', 95.5, 0.65, 28.3);
   }
@@ -698,31 +734,63 @@ const wallMats = [];
     cn.position.set(x, 2.9 * s, z); cn.castShadow = true; site.add(cn);
   };
   const Dz = R.descanso, Vz = R.verde, Cm = R.camaras;
-  floor(site, Dz, '#c9c1b0', 0.07, 'descanso');
-  floor(site, Vz, '#6f9a4f', 0.07, 'verde');
-  box(site, Vz.x1 - Vz.x0, 0.2, 0.15, '#bdb7ae', (Vz.x0 + Vz.x1) / 2, 0.1, Vz.z1, { cast: false });
-  box(site, 0.15, 0.2, Vz.z1 - Vz.z0 - 1.2, '#bdb7ae', Vz.x0, 0.1, (Vz.z0 + Vz.z1) / 2 + 0.6, { cast: false });
+  // rest area: covered by a corrugated roof on steel posts, artificial grass, wooden benches, planters, notice boards
+  floor(site, Dz, '#b9b5ac', 0.07, 'descanso');
+  floor(site, { x0: 86.6, x1: 90.6, z0: 5.2, z1: 10.6 }, '#3f7a3a', 0.08);
+  {
+    const post = mat('#2b2e33');
+    [[85.4, 3.0], [91.6, 3.0], [85.4, 7.6], [91.6, 7.6], [85.4, 12.4], [91.6, 12.4]].forEach(([x, z]) => box(site, 0.15, 3.2, 0.15, null, x, 1.6, z, { material: post }));
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(Dz.x1 - Dz.x0 + 0.6, 0.1, Dz.z1 - Dz.z0 + 0.4), corrugated('#a3a8ad', 7));
+    roof.position.set((Dz.x0 + Dz.x1) / 2, 3.3, (Dz.z0 + Dz.z1) / 2); roof.castShadow = true; roof.userData.zone = 'descanso'; pickables.push(roof); roofG.add(roof);
+    box(site, 5.6, 0.25, 0.4, '#e3b51e', 88.9, 0.12, 12.85, { cast: false });                       // yellow curb
+  }
   const bench = (x, z, rotY) => {
-    const g = new THREE.Group();
-    box(g, 1.8, 0.08, 0.45, '#8a6440', 0, 0.45, 0); box(g, 1.8, 0.4, 0.06, '#8a6440', 0, 0.75, -0.22);
-    box(g, 0.08, 0.45, 0.4, '#3c4148', -0.8, 0.22, 0); box(g, 0.08, 0.45, 0.4, '#3c4148', 0.8, 0.22, 0);
+    const g = new THREE.Group(), wd = mat('#9c4a2e', { roughness: 0.7 }), fr = mat('#2a3f66');
+    for (let k = 0; k < 3; k++) box(g, 1.9, 0.05, 0.12, null, 0, 0.46, -0.16 + k * 0.16, { material: wd });
+    for (let k = 0; k < 3; k++) box(g, 1.9, 0.1, 0.04, null, 0, 0.62 + k * 0.14, -0.26, { material: wd, cast: false });
+    [-0.85, 0.85].forEach(px => { box(g, 0.05, 0.46, 0.5, null, px, 0.23, 0, { material: fr }); box(g, 0.05, 0.5, 0.05, null, px, 0.7, -0.27, { material: fr, cast: false }); });
     g.position.set(x, 0, z); g.rotation.y = rotY; site.add(g);
   };
-  bench(86.3, 6.2, Math.PI / 2); bench(86.3, 9.6, Math.PI / 2); bench(90.9, 7.4, -Math.PI / 2); bench(90.9, 10.6, -Math.PI / 2);
-  box(site, 1.2, 0.75, 1.2, '#8a6440', 88.6, 0.375, 8.2);
-  tree(88.6, 11.4, 0.7);
-  tree(97.8, 16.6, 0.9); tree(94.8, 21, 0.85); tree(98.3, 25.2, 0.9);
-  [[99, 19.4], [94.3, 17.4], [96.8, 23.2]].forEach(([x, z]) => {
-    const sh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6, 1), mat('#5f8c45', { flatShading: true }));
-    sh.position.set(x, 0.45, z); sh.castShadow = true; site.add(sh);
+  bench(87.0, 7.0, Math.PI / 2); bench(87.0, 9.4, Math.PI / 2); bench(90.2, 7.0, -Math.PI / 2); bench(90.2, 9.4, -Math.PI / 2);
+  box(site, 1.4, 0.05, 0.7, '#2b2e33', 88.6, 0.75, 6.0); box(site, 0.08, 0.75, 0.08, '#2b2e33', 88.6, 0.37, 6.0);
+  [[86.2, 5.0], [91.0, 11.2], [86.2, 11.6], [91.0, 5.0]].forEach(([x, z]) => {
+    box(site, 0.7, 0.6, 0.7, '#cfcac0', x, 0.3, z);
+    const pl = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1), mat('#3f7a3a', { flatShading: true })); pl.position.set(x, 1.0, z); site.add(pl);
   });
-  rbox(site, Cm, 2.3, '#e6e0d3', 0, { zone: 'camaras' });
-  box(site, 2.4, 0.2, 2.4, '#3d4a5c', (Cm.x0 + Cm.x1) / 2, 2.4, (Cm.z0 + Cm.z1) / 2, { zone: 'camaras' });
-  box(site, 1.4, 0.8, 0.06, '#2c3a4b', (Cm.x0 + Cm.x1) / 2, 1.5, Cm.z1 + 0.03, { cast: false });
-  box(site, 0.06, 0.8, 1.4, '#2c3a4b', Cm.x0 - 0.03, 1.5, (Cm.z0 + Cm.z1) / 2, { cast: false });
-  box(site, 0.12, 4.5, 0.12, '#55595f', Cm.x1 - 0.2, 2.25, Cm.z0 + 0.2);
-  box(site, 0.25, 0.25, 0.5, '#e8e8e8', Cm.x1 - 0.2, 4.45, Cm.z0 - 0.1);
-
+  box(site, 3.2, 1.2, 0.06, '#dfe9f2', 88.6, 1.6, 3.4, { cast: false }); box(site, 3.3, 1.3, 0.04, '#2f7f8f', 88.6, 1.6, 3.37, { cast: false });
+  [87.0, 90.2].forEach(x => box(site, 0.06, 1.6, 0.06, '#2b2e33', x, 0.8, 3.35));
+  box(site, 0.8, 1.6, 0.7, '#e8e8e6', 85.9, 0.8, 11.0);
+  // cameras booth: white prefab, two modules, sliding windows, next to the red gate
+  {
+    const cx = (Cm.x0 + Cm.x1) / 2, cz = (Cm.z0 + Cm.z1) / 2, wM = mat('#f1f2f0', { roughness: 0.4 });
+    box(site, Cm.x1 - Cm.x0, 2.3, Cm.z1 - Cm.z0, null, cx, 0.25 + 1.15, cz, { material: wM, zone: 'camaras' });
+    [Cm.x0 + 0.1, Cm.x1 - 0.1].forEach(x => [Cm.z0 + 0.1, Cm.z1 - 0.1].forEach(z => box(site, 0.08, 0.25, 0.08, '#2b2e33', x, 0.12, z)));
+    box(site, Cm.x1 - Cm.x0 + 0.2, 0.12, Cm.z1 - Cm.z0 + 0.5, '#e3e5e6', cx, 2.62, cz + 0.15, { zone: 'camaras' });
+    [cx - 0.82, cx + 0.82].forEach(x => { box(site, 1.3, 0.75, 0.05, '#1f2a36', x, 1.75, Cm.z1 + 0.03, { cast: false }); box(site, 1.42, 0.87, 0.04, '#cfd6db', x, 1.75, Cm.z1 + 0.02, { cast: false }); });
+    box(site, 0.05, 1.9, 0.8, '#2f5d8c', Cm.x0 - 0.03, 1.2, cz, { cast: false });
+    [[cx + 1.4, Cm.z1 + 0.6], [Cm.x1 + 0.4, Cm.z1 + 0.3]].forEach(([x, z]) => { const cn = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.65, 12), mat('#ff6a1a')); cn.position.set(x, 0.33, z); site.add(cn); });
+  }
+  // garden between the camarines and the Juan Macaya wall
+  floor(site, Vz, '#a9a59c', 0.07, 'verde');                                        // gravel
+  floor(site, { x0: 94.6, x1: 99.1, z0: 14.6, z1: 26.4 }, '#8f9d58', 0.075);       // grass
+  {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.12, 6, 24), mat('#8fd0e6')); ring.rotation.x = Math.PI / 2; ring.position.set(97.0, 0.12, 20.2); site.add(ring);
+    for (let k = 0; k < 10; k++) { const fl = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 0), mat(k % 2 ? '#e05fa0' : '#f2c230')); fl.position.set(97 + Math.cos(k) * 0.7, 0.3, 20.2 + Math.sin(k * 1.7) * 0.7); site.add(fl); }
+    const cypress = (x, z, h) => { const c = new THREE.Mesh(new THREE.ConeGeometry(0.55, h, 10), mat('#2f5a2c', { flatShading: true })); c.position.set(x, h / 2 + 0.3, z); c.castShadow = true; site.add(c); };
+    cypress(95.2, 24.6, 7.5); cypress(98.9, 23.0, 7); cypress(95.0, 16.6, 6.5); cypress(98.6, 15.6, 6);
+    tree(97.4, 25.4, 0.85); tree(96.2, 18.0, 0.75);
+    [[94.2, 21.5], [99.0, 19.0], [95.8, 22.4], [98.2, 26.0], [94.4, 15.2]].forEach(([x, z]) => { const sh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.65, 1), mat('#5f8c45', { flatShading: true })); sh.position.set(x, 0.5, z); sh.castShadow = true; site.add(sh); });
+    [95.6, 96.4, 97.2].forEach(x => box(site, 0.1, 8, 0.1, '#e8e8e8', x, 4, 26.6));                        // flagpoles
+    const fM = mat('#2f5d8c', { metalness: 0.3 });
+    [[93.4, 95.6], [96.8, 99.7]].forEach(([x0, x1]) => {                                                   // front fence with gate gap
+      [0.15, 1.0].forEach(y => box(site, x1 - x0, 0.05, 0.05, null, (x0 + x1) / 2, y, 27.3, { material: fM, cast: false }));
+      for (let x = x0 + 0.1; x < x1; x += 0.2) box(site, 0.03, 1.1, 0.03, null, x, 0.55, 27.3, { material: fM, cast: false });
+    });
+    box(site, 0.9, 1.9, 0.7, '#3d4f6a', 93.5, 0.95, 17.0);                                               // gas cylinder cage (red cylinders)
+    [-0.2, 0.2].forEach(dz => { const cy = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.3, 12), mat('#d6362b')); cy.position.set(93.5, 0.7, 17.0 + dz); site.add(cy); });
+    [97.8, 98.6].forEach(x => box(site, 0.12, 1.2, 1.0, '#2f4f8a', x, 0.6, 27.75));                        // blue pallets on edge
+    box(site, 0.06, 2.2, 0.06, '#5b3b2e', 99.3, 1.1, 28.2); box(site, 0.6, 0.45, 0.04, '#1f7a4d', 99.3, 2.1, 28.18, { cast: false }); // SALIDA sign
+  }
 
   // --- Estacionamiento: parallel stalls against the bodega wall, with a driving lane beside them toward the back
   {
@@ -747,15 +815,15 @@ const wallMats = [];
   lbl('gate', 12, 5.2, 27);
   lbl('garita', 7, 3.8, 27);
   lbl('banos', 3.1, 4.8, 54);
-  lbl('descanso', 88.4, 2.2, 7);
-  lbl('camaras', 86.3, 5.4, 3.5);
+  lbl('descanso', 88.6, 2.6, 8.2);
+  lbl('camaras', 87.0, 4.4, 1.6);
   lbl('verde', 96.5, 4.5, 19);
-  lbl('peatonal', 89.6, 3.6, 0);
+  lbl('peatonal', 90.35, 3.4, 0);
   lbl('segC', 3.2, 2.4, 47.5);
   lbl('segM', 97, 2.4, 30.4);
   lbl('garAlero', 92.3, 4.4, 60.1);
   label(site, 'Sendero peatonal', 'lbl tag', 40, 1.2, 1.3);
-  label(site, 'Oficina', 'lbl tag', (of.x0 + of.x1) / 2, 4.8, 6.5);
+  label(site, 'Oficina', 'lbl tag', (of.x0 + of.x1) / 2, 8.2, 6.5);
   label(site, 'Camarines · Pañol · Camarín mujer', 'lbl tag', 89, 4.4, 20.6);
 
   // --- Dimensions

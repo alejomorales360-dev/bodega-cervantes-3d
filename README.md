@@ -27,6 +27,10 @@ Renders en 4K (3840 × 2160) en la carpeta `renders/`:
 | Pasillo con los pilares del centro | `renders/10-pilares.jpg` |
 | Sendero peatonal del alero a los camarines | `renders/11-sendero.jpg` |
 | Estacionamiento junto a la bodega | `renders/12-estacionamiento.jpg` |
+| Zona de descanso techada | `renders/13-descanso.jpg` |
+| Jardín visto desde la oficina | `renders/14-jardin.jpg` |
+| Pasillo junto a los camarines | `renders/15-pasillo-camarines.jpg` |
+| Garita de cámaras y portón peatonal | `renders/16-garita-camaras.jpg` |
 
 Para generar capturas en alta resolución desde el navegador, abre la página con `#hd` al final de la dirección (sombras y resolución más altas).
 
