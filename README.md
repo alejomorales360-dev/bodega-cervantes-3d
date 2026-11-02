@@ -18,6 +18,7 @@ En el panel, la sección **Stock por ubicación** permite cargar el stock real d
   - **Cantidad de paquetes**: si no existe, cada fila cuenta como un paquete.
   - **Producto** y **tipo o familia**: definen cómo se ve el paquete (moldura blanca, pino o terciado).
   - **Largo**: en metros, centímetros o milímetros. Se ajusta a 2,4–4,8 m.
+  - **Volumen (m³)** y **cliente**: si el archivo trae volumen (por ejemplo el "Informe de Stock", pestaña "Detalle de Lotes"), cada fila es un lote y los paquetes se dibujan según el volumen. El resumen se muestra por cliente.
 - **Cómo se apilan:** pila por pila, desde el pasillo, hasta el número de alturas elegido (6 por defecto).
 - **Ocupación:** la página muestra la ocupación estimada y puede colorear el piso de cada ubicación por ocupación (verde, amarillo o rojo). También avisa qué ubicaciones no caben y qué códigos no reconoció.
 - **Detalle por ubicación:** al tocar una ubicación aparece su stock por producto.

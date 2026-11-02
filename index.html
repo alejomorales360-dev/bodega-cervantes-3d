@@ -895,7 +895,7 @@ const pkgKind = (txt) => {
   const t = (txt || '').toLowerCase();
   if (/ply|terciad|contrachap|plywood|tablero|osb|mdf/.test(t)) return 'ply';
   if (/mould|moldur|finger|primed|blanc|white|jamba|z[oó]calo/.test(t)) return 'white';
-  if (/pino|pine|madera|bruto|cepill|aserr|timber|lumber|tabla|viga/.test(t)) return 'pine';
+  if (/pino|pine|madera|bruto|cepill|aserr|timber|lumber|tabla|viga|clear|blank|verde/.test(t)) return 'pine';
   let h = 0; for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return ['white', 'pine', 'ply'][h % 3];
 };
 const locCapacity = (code, len = 4.8) => { const L = locInfo[code]; return L.n * MAXT * (L.d >= 4.9 && len <= 2.4 ? 2 : 1); };
@@ -971,29 +971,29 @@ const locCapacity = (code, len = 4.8) => { const L = locInfo[code]; return L.n *
           const len = d >= 4.9 ? ln.len : Math.min(ln.len, 2.4), slots = d >= 4.9 && len <= 2.4 ? 2 : 1;
           if (curLen !== null && curLen !== len && (tier || slot)) { i++; slot = 0; tier = 0; }
           curLen = len;
-          for (let q = 0; q < ln.qty && i < n; q++) {
+          for (let q = 0; q < ln.eq && i < n; q++) {
             const zc = slots === 2 ? cz + (slot ? 1 : -1) * (len + GAP) / 2 : cz;
             put(ln.kind, len, ox + i * (PW + GAP), PH / 2 + tier * PH, zc, false);
             placed++; maxT = Math.max(maxT, tier + 1);
             if (++tier === MAXT) { tier = 0; if (++slot === slots) { slot = 0; i++; } }
           }
         }
-        if (e) { e.placed = placed; e.overflow = Math.max(0, e.qty - placed); e.capacity = locCapacity(code, e.lines[0]?.len); }
-        L.label.element.textContent = e ? `${code} · ${fmt(e.qty)}` : code;
+        if (e) { e.placed = placed; e.overflow = Math.max(0, e.eq - placed); e.capacity = locCapacity(code, e.lines[0]?.len); }
+        L.label.element.textContent = e ? `${code} · ${fmt(e.qty)}${stock.hasVol ? ' lotes' : ''}` : code;
       }
       L.label.position.y = Math.max(1, maxT) * PH + 0.6;
       // floor colour: blue by default; occupancy colour when stock is loaded and the heat map is on
       const heat = stock && $('#s-heat')?.checked;
       if (heat) {
-        const e = stock.byLoc[code], pct = e ? e.qty / Math.max(1, e.capacity) : 0;
+        const e = stock.byLoc[code], pct = e ? e.eq / Math.max(1, e.capacity) : 0;
         L.floor.material.color.set(pct === 0 ? '#9aa3ad' : pct < 0.5 ? '#2e9d57' : pct < 0.85 ? '#e5a900' : '#d6362b');
         L.floor.material.opacity = 0.8;
       } else { L.floor.material.color.set('#4a7fc0'); L.floor.material.opacity = 0.35; }
     }
     // bodega pequeña: two rows of 4.8 m packages along its long walls, central aisle, clear in front of doors 1–4
     const Pq = R.peq, peq = stock?.peq;
-    let left = peq ? peq.qty : Infinity, li = 0, lq = 0;
-    const nextKind = () => { if (!peq) return pick(); while (peq.lines[li] && lq >= peq.lines[li].qty) { li++; lq = 0; } lq++; return peq.lines[li]?.kind || 'pine'; };
+    let left = peq ? peq.eq : Infinity, li = 0, lq = 0;
+    const nextKind = () => { if (!peq) return pick(); while (peq.lines[li] && lq >= peq.lines[li].eq) { li++; lq = 0; } lq++; return peq.lines[li]?.kind || 'pine'; };
     [Pq.z0 + 0.9, Pq.z0 + 2.15, Pq.z1 - 2.15, Pq.z1 - 0.9].forEach((z, row) => {
       for (let x = Pq.x0 + 0.8; x + 4.8 < Pq.x1 - 0.5; x += 5.0) {
         const xc = x + 2.4;
@@ -1218,9 +1218,11 @@ function selectLoc(code, flyTo = true) {
   if (st) {
     const e = st.byLoc[code];
     $('#info').insertAdjacentHTML('beforeend', e
-      ? `<dl class="kv"><dt>Stock</dt><dd>${fmt(e.qty)} paquetes</dd><dt>Capacidad aprox.</dt><dd>${fmt(e.capacity)} (${MAXT} alturas)</dd><dt>Ocupación</dt><dd>${fmt(e.qty / Math.max(1, e.capacity) * 100, 0)} %</dd></dl>
-         <ul class="stocklines">${e.lines.slice(0, 10).map(l => `<li>${esc(l.prod)} · ${fmt(l.len, 1)} m · <b>${fmt(l.qty)}</b></li>`).join('')}${e.lines.length > 10 ? `<li>… y ${e.lines.length - 10} productos más</li>` : ''}</ul>
-         ${e.overflow ? `<p class="warnline">${fmt(e.overflow)} paquetes no caben en el modelo con ${MAXT} alturas.</p>` : ''}`
+      ? `<dl class="kv"><dt>Stock</dt><dd>${fmt(e.qty)} ${st.hasVol ? 'lotes' : 'paquetes'}${st.hasVol ? ` · ${fmt(e.vol, 1)} m³` : ''}</dd>
+         <dt>Paquetes dibujados</dt><dd>${fmt(e.placed)} de ${fmt(e.eq)}${st.hasVol ? ' (por volumen)' : ''}</dd>
+         <dt>Capacidad aprox.</dt><dd>${fmt(e.capacity)} paquetes (${MAXT} alturas)</dd><dt>Ocupación</dt><dd>${fmt(e.eq / Math.max(1, e.capacity) * 100, 0)} %</dd></dl>
+         <ul class="stocklines">${e.lines.slice(0, 10).map(l => `<li>${l.cli ? esc(l.cli) + ' · ' : ''}${esc(l.prod)} · <b>${fmt(l.qty)}</b>${st.hasVol ? ` · ${fmt(l.vol, 1)} m³` : ''}</li>`).join('')}${e.lines.length > 10 ? `<li>… y ${e.lines.length - 10} líneas más</li>` : ''}</ul>
+         ${e.overflow ? `<p class="warnline">El stock supera lo que cabe con las medidas del plano: faltan ${fmt(e.overflow)} paquetes por dibujar. Revisa las medidas reales de esta ubicación.</p>` : ''}`
       : '<p class="note">Sin stock en esta ubicación según el archivo cargado.</p>');
   }
   if (flyTo) flyToRect(r, 2.2);
@@ -1478,18 +1480,18 @@ async function buildReport() {
   [['oficinas', 'Sector oficinas, descanso y jardín'], ['alero', 'Bajo el alero: portones y garita']].forEach(([k, cap], i) => picture(shots[k], M + i * (gw + 8), M + 16, gw, cap));
   // locations grid
   y = M + 16 + gh + 16;
-  doc.setTextColor(...ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text(STOCK.data ? `Stock por ubicación · ${STOCK.data.file} · ${fmt(STOCK.data.total)} paquetes` : 'Ubicaciones A–F (medidas aproximadas, a escala del plano)', M, y); y += 5;
+  doc.setTextColor(...ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text(STOCK.data ? `Stock por ubicación · ${STOCK.data.file} · ${fmt(STOCK.data.total)} ${STOCK.data.hasVol ? 'lotes · ' + fmt(STOCK.data.totalVol, 0) + ' m³' : 'paquetes'}` : 'Ubicaciones A–F (medidas aproximadas, a escala del plano)', M, y); y += 5;
   const cw = (PW - 2 * M) / 6, ch = 4.6;
   doc.setFontSize(7.5);
   for (let r = 12; r >= 1; r--) {
     Object.keys(COLS).forEach((c, i) => {
       const L = LOCS[`${c}-${r}`], a = (L.x1 - L.x0) * (L.z1 - L.z0), sel = selected === 'loc:' + c + '-' + r;
-      const se = STOCK.data?.byLoc[`${c}-${r}`], pct = se ? se.qty / Math.max(1, se.capacity) : 0;
+      const se = STOCK.data?.byLoc[`${c}-${r}`], pct = se ? se.eq / Math.max(1, se.capacity) : 0;
       const fill = sel ? mark : !STOCK.data ? [226, 235, 246] : !se ? [240, 241, 243] : pct >= 0.85 ? [246, 200, 196] : pct >= 0.5 ? [250, 230, 170] : [200, 232, 210];
       doc.setFillColor(...fill); doc.rect(M + i * cw + 0.4, y, cw - 0.8, ch - 0.6, 'F');
       doc.setTextColor(...ink); doc.setFont('helvetica', 'bold'); doc.text(`${c}-${r}`, M + i * cw + 2, y + 3.1);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...muted);
-      doc.text(STOCK.data ? (se ? `${fmt(se.qty)} paq. · ${fmt(pct * 100, 0)} %` : 'sin stock') : `${fmt(L.x1 - L.x0, 1)} × ${fmt(L.z1 - L.z0, 1)} m · ${fmt(a)} m²`, M + (i + 1) * cw - 2, y + 3.1, { align: 'right' });
+      doc.text(STOCK.data ? (se ? (STOCK.data.hasVol ? `${fmt(se.qty)} lotes · ${fmt(se.vol, 0)} m³` : `${fmt(se.qty)} paq. · ${fmt(pct * 100, 0)} %`) : 'sin stock') : `${fmt(L.x1 - L.x0, 1)} × ${fmt(L.z1 - L.z0, 1)} m · ${fmt(a)} m²`, M + (i + 1) * cw - 2, y + 3.1, { align: 'right' });
     });
     y += ch;
   }
@@ -1528,6 +1530,8 @@ const FIELDS = [
   ['prod', 'Producto', /desc|nombre|producto|glosa|detalle/],
   ['tipo', 'Tipo o familia', /tipo|famil|categ|clase|l[ií]nea|grupo/],
   ['largo', 'Largo', /largo|long|length|medida/],
+  ['vol', 'Volumen (m³)', /vol|m3|m³/],
+  ['cli', 'Cliente', /client/],
 ];
 let stockRaw = null;                         // { header: [...], rows: [[...]], file }
 const parseNum = v => {
@@ -1559,21 +1563,24 @@ function guessMapping(header, rows) {
   return map;
 }
 function applyStock(raw, map) {
-  const byLoc = {}, unknown = new Map(); let total = 0, peq = null;
+  const byLoc = {}, unknown = new Map(); let total = 0, totalVol = 0, peq = null;
   for (const r of raw.rows) {
     const code = normCode(r[map.ubic]); const q = map.qty != null ? parseNum(r[map.qty]) : 1;
     if (!isFinite(q) || q <= 0) continue;
     const qty = Math.round(q);
     if (!code) { const k = String(r[map.ubic] ?? '').trim() || '(vacío)'; unknown.set(k, (unknown.get(k) || 0) + qty); continue; }
     const prod = map.prod != null ? String(r[map.prod] ?? '').trim() : '', tipo = map.tipo != null ? String(r[map.tipo] ?? '').trim() : '';
-    const line = { prod: prod || tipo || 'Sin descripción', tipo, qty, len: (map.largo != null && snapLen(r[map.largo])) || 4.8, kind: pkgKind(tipo + ' ' + prod) };
-    const tgt = code === 'PEQ' ? (peq ||= { qty: 0, lines: [] }) : (byLoc[code] ||= { qty: 0, lines: [] });
-    const same = tgt.lines.find(l => l.prod === line.prod && l.len === line.len);
-    same ? (same.qty += qty) : tgt.lines.push(line);
-    tgt.qty += qty; total += qty;
+    const cli = map.cli != null ? String(r[map.cli] ?? '').trim() : '', v = map.vol != null ? (parseNum(r[map.vol]) || 0) : 0;
+    const line = { prod: prod || tipo || 'Sin descripción', cli, tipo, qty, vol: v, len: (map.largo != null && snapLen(r[map.largo])) || 4.8, kind: pkgKind(tipo + ' ' + prod) };
+    const tgt = code === 'PEQ' ? (peq ||= { qty: 0, vol: 0, lines: [] }) : (byLoc[code] ||= { qty: 0, vol: 0, lines: [] });
+    const same = tgt.lines.find(l => l.prod === line.prod && l.cli === line.cli && l.len === line.len);
+    same ? (same.qty += qty, same.vol += v) : tgt.lines.push(line);
+    tgt.qty += qty; tgt.vol += v; total += qty; totalVol += v;
   }
-  Object.values(byLoc).forEach(e => e.lines.sort((a, b) => b.len - a.len || b.qty - a.qty));
-  STOCK.data = { byLoc, peq, unknown: [...unknown], total, file: raw.file, at: new Date().toLocaleString('es-CL'), map };
+  // packages drawn: from volume when the file has it (one package ≈ 1,18 × 0,82 × largo), otherwise one per unit
+  const eqOf = l => map.vol != null ? Math.max(l.vol > 0 ? 1 : 0, Math.round(l.vol / (1.18 * 0.82 * l.len * 0.92))) : l.qty;
+  [...Object.values(byLoc), peq].filter(Boolean).forEach(e => { e.lines.forEach(l => (l.eq = eqOf(l))); e.eq = e.lines.reduce((a, l) => a + l.eq, 0); e.lines.sort((a, b) => b.len - a.len || b.eq - a.eq); });
+  STOCK.data = { byLoc, peq, unknown: [...unknown], total, totalVol, hasVol: map.vol != null, file: raw.file, at: new Date().toLocaleString('es-CL'), map };
   layoutPackages();
   renderStockUI();
   try { localStorage.setItem('bodega-stock', JSON.stringify({ raw, map })); } catch (e) { /* storage full or blocked */ }
@@ -1590,17 +1597,25 @@ function renderStockUI() {
   document.querySelectorAll('#locgrid button').forEach(b => {
     const e = S2?.byLoc[b.dataset.code], c = b.dataset.code;
     b.innerHTML = S2 ? `${c}<small>${e ? fmt(e.qty) : '—'}</small>` : c;
-    b.style.background = !S2 ? '' : !e ? 'transparent' : (e.qty / Math.max(1, e.capacity) >= 0.85 ? 'color-mix(in srgb,#d6362b 35%,transparent)' : e.qty / Math.max(1, e.capacity) >= 0.5 ? 'color-mix(in srgb,#e5a900 35%,transparent)' : 'color-mix(in srgb,#2e9d57 30%,transparent)');
+    b.style.background = !S2 ? '' : !e ? 'transparent' : (e.eq / Math.max(1, e.capacity) >= 0.85 ? 'color-mix(in srgb,#d6362b 35%,transparent)' : e.eq / Math.max(1, e.capacity) >= 0.5 ? 'color-mix(in srgb,#e5a900 35%,transparent)' : 'color-mix(in srgb,#2e9d57 30%,transparent)');
   });
   if (!S2) { box2.innerHTML = '<p class="empty">El modelo muestra paquetes de ejemplo. Carga tu stock para ubicarlos según las cantidades reales.</p>'; return; }
   const locs = Object.entries(S2.byLoc), over = locs.filter(([, e]) => e.overflow > 0);
   const cap = Object.keys(LOCS).reduce((a, c) => a + locCapacity(c, S2.byLoc[c]?.lines[0]?.len), 0);
   box2.innerHTML = `<dl class="kv"><dt>Archivo</dt><dd>${esc(S2.file)}</dd><dt>Cargado</dt><dd>${S2.at}</dd>
-    <dt>Paquetes</dt><dd>${fmt(S2.total)}</dd><dt>Ubicaciones con stock</dt><dd>${locs.length} de 72</dd>
-    <dt>Ocupación estimada</dt><dd>${fmt(locs.reduce((a, [, e]) => a + e.qty, 0) / cap * 100, 0)} %</dd>
-    ${S2.peq ? `<dt>Bodega pequeña</dt><dd>${fmt(S2.peq.qty)} paq.</dd>` : ''}</dl>
-    ${over.length ? `<p class="warnline">No caben con ${MAXT} alturas: ${over.map(([c, e]) => `${c} (+${e.overflow})`).join(', ')}</p>` : ''}
+    <dt>${S2.hasVol ? 'Lotes' : 'Paquetes'}</dt><dd>${fmt(S2.total)}</dd>${S2.hasVol ? `<dt>Volumen</dt><dd>${fmt(S2.totalVol, 0)} m³</dd>` : ''}
+    <dt>Ubicaciones con stock</dt><dd>${locs.length} de 72</dd>
+    <dt>Ocupación estimada</dt><dd>${fmt(locs.reduce((a, [, e]) => a + e.eq, 0) / cap * 100, 0)} %</dd>
+    ${S2.peq ? `<dt>Bodega pequeña</dt><dd>${fmt(S2.peq.qty)} ${S2.hasVol ? 'lotes' : 'paq.'}</dd>` : ''}</dl>
+    ${clientSummary(S2)}
+    ${over.length ? `<p class="warnline">Superan la capacidad según las medidas del plano (${MAXT} alturas): ${over.map(([c, e]) => `${c} (+${e.overflow})`).join(', ')}</p>` : ''}
     ${S2.unknown.length ? `<p class="warnline">Ubicaciones no reconocidas: ${S2.unknown.slice(0, 8).map(([k, q]) => `${esc(k)} (${q})`).join(', ')}${S2.unknown.length > 8 ? '…' : ''}</p>` : ''}`;
+}
+function clientSummary(S2) {
+  if (!S2.map || S2.map.cli == null) return '';
+  const agg = {};
+  [...Object.values(S2.byLoc), S2.peq].filter(Boolean).forEach(e => e.lines.forEach(l => { const k = l.cli || 'Sin cliente'; agg[k] ||= { q: 0, v: 0 }; agg[k].q += l.qty; agg[k].v += l.vol; }));
+  return `<ul class="stocklines">${Object.entries(agg).sort((a, b) => b[1].v - a[1].v || b[1].q - a[1].q).map(([k, a]) => `<li>${esc(k)} · ${fmt(a.q)} lotes${S2.hasVol ? ` · ${fmt(a.v, 0)} m³` : ''}</li>`).join('')}</ul>`;
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function showMapping(raw, map) {
