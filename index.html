@@ -240,7 +240,7 @@ const R = {
   patio:   { x0: 0,    x1: 100,  z0: 0,     z1: 48,     h: 0.3 },
   alero:   { x0: 0.5,  x1: 94.3, z0: 48,    z1: 61.3,   h: 8.4 },
   bodega:  { x0: 0.5,  x1: 94.3, z0: 61.3,  z1: 123,    h: 12.5 },
-  est:     { x0: 94.6, x1: 98.8, z0: 61.3,  z1: 123.79, h: 1.6 },
+  est:     { x0: 94.4, x1: 98.6, z0: 61.3,  z1: 123.79, h: 1.6 },
   peq:     { x0: 6.5,  x1: 69,   z0: 123,   z1: 131,    h: 6.4 },
   trasero: { x0: 0,    x1: 100,  z0: 123,   z1: 136.3,  h: 0.3 },
   oficina: { x0: 85,   x1: 100,  z0: 0,     z1: 30,     h: 3.8 },
@@ -265,7 +265,7 @@ const ZONES = {
   oficina: { name: 'Sector oficinas',  dims: '15 × 30 m',     area: 450,    color: '#bcd3e6',
              note: 'Esquina Pedro Montt con Juan Macaya. Incluye la oficina, los camarines, el pañol y el camarín de mujeres.' },
   est:     { name: 'Estacionamiento',  dims: '4,2 × 62,49 m', area: 262.4,  color: '#3f444b',
-             note: 'Franja junto al costado de la bodega hacia Juan Macaya. 11 puestos en fila.' },
+             note: 'Puestos en paralelo pegados al muro de la bodega, con una pista al lado para circular en auto hacia el fondo.' },
   patio:   { name: 'Patio delantero',  dims: '92 × 48 m',     area: 4416,   color: '#5d6168',
              note: 'Patio de maniobras con portones a Cervantes y a Juan Macaya. Aquí están los camiones, los contenedores y el gate.' },
   trasero: { name: 'Patio trasero',    dims: '100 × 13,3 m',  area: 1331,   color: '#7b7d7f',
@@ -724,13 +724,20 @@ const wallMats = [];
   box(site, 0.25, 0.25, 0.5, '#e8e8e8', Cm.x1 - 0.2, 4.45, Cm.z0 - 0.1);
 
 
-  // --- Estacionamiento: 11 stalls in a row, cars in the front half (as in the plan)
-  const stall = mat('#f2f0e8'), sl = (E.z1 - E.z0) / 11;
-  for (let i = 0; i <= 11; i++) box(site, E.x1 - E.x0 - 0.4, 0.02, 0.12, null, (E.x0 + E.x1) / 2, 0.06, E.z0 + i * sl, { cast: false, material: stall });
-  ['#9aa3ad', '#e8e8e8', '#2f3a48', '#7a1f1f', '#d8d4cc', '#5b6470'].forEach((c, i) => {
-    const z = E.z0 + (i + 0.5) * sl, cx = (E.x0 + E.x1) / 2;
-    box(site, 1.8, 1.0, 4.4, c, cx, 0.65, z); box(site, 1.6, 0.6, 2.3, c, cx, 1.45, z + 0.2);
-  });
+  // --- Estacionamiento: parallel stalls against the bodega wall, with a driving lane beside them toward the back
+  {
+    const paint = mat('#f2f0e8'), STALL_X1 = 96.9, LANE_X1 = 99.85;
+    floor(site, { x0: 98.6, x1: LANE_X1, z0: E.z0, z1: E.z1 }, ZONES.est.color, 0.035);
+    box(site, 0.12, 0.02, E.z1 - E.z0, null, STALL_X1, 0.06, (E.z0 + E.z1) / 2, { cast: false, material: paint });   // stall edge line
+    for (let i = 0; i <= 10; i++) box(site, STALL_X1 - 94.6, 0.02, 0.12, null, (94.6 + STALL_X1) / 2, 0.06, E.z0 + 0.4 + i * 6.1, { cast: false, material: paint });
+    // direction arrows along the lane (toward the back)
+    for (let z = E.z0 + 8; z < E.z1 - 6; z += 16) {
+      const lx = (STALL_X1 + LANE_X1) / 2;
+      box(site, 0.18, 0.02, 2.2, null, lx, 0.06, z, { cast: false, material: paint });
+      [-1, 1].forEach(sd => { const h = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 1.0), paint); h.position.set(lx + sd * 0.28, 0.06, z + 0.75); h.rotation.y = -sd * 0.6; site.add(h); });
+    }
+    box(site, 0.25, 0.9, 0.25, '#f2c230', STALL_X1 + 0.2, 0.45, E.z0 + 0.3); box(site, 0.25, 0.9, 0.25, '#f2c230', STALL_X1 + 0.2, 0.45, E.z1 - 0.3);
+  }
 
   // --- Zone labels
   const lbl = (id, x, y, z) => label(site, `<b>${ZONES[id].name}</b>${ZONES[id].area ? `<span>${fmt(ZONES[id].area, ZONES[id].area % 1 ? 2 : 0)} m²</span>` : ''}`, 'lbl', x, y, z, id);
@@ -920,6 +927,24 @@ function rig(parent, { cab = '#f2f2f0', load = 'none', x, z, rotY = 0, contColor
   g.position.set(x, 0, z); g.rotation.y = rotY; parent.add(g);
   return g;
 }
+function car(parent, x, z, color, rotY = 0) {
+  const g = new THREE.Group(), paintM = mat(color, { roughness: 0.3, metalness: 0.55 });
+  box(g, 1.8, 0.55, 4.4, null, 0, 0.62, 0, { material: paintM });                       // lower body
+  box(g, 1.78, 0.18, 1.0, null, 0, 0.98, -1.55, { material: paintM });                 // hood
+  box(g, 1.78, 0.14, 0.7, null, 0, 0.96, 1.75, { material: paintM });                  // trunk
+  box(g, 1.62, 0.52, 2.3, null, 0, 1.15, 0.15, { material: glassM });                  // glasshouse
+  box(g, 1.55, 0.07, 1.75, null, 0, 1.44, 0.25, { material: paintM });                 // roof
+  [-0.95, 1.2].forEach(zz => box(g, 1.64, 0.5, 0.1, null, 0, 1.15, zz, { material: paintM, cast: false })); // pillars
+  box(g, 1.84, 0.2, 0.2, null, 0, 0.45, -2.2, { material: darkM }); box(g, 1.84, 0.2, 0.2, null, 0, 0.45, 2.2, { material: darkM }); // bumpers
+  [-1, 1].forEach(sd => {
+    box(g, 0.32, 0.12, 0.05, null, sd * 0.62, 0.78, -2.21, { material: mat('#fff7d6', { emissive: '#fff2c0', emissiveIntensity: 0.4 }), cast: false });
+    box(g, 0.32, 0.12, 0.05, null, sd * 0.62, 0.8, 2.21, { material: mat('#c1121f', { emissive: '#7a0a10', emissiveIntensity: 0.4 }), cast: false });
+    box(g, 0.12, 0.1, 0.18, null, sd * 0.95, 1.05, -0.95, { material: paintM, cast: false });   // mirrors
+    [-1.35, 1.35].forEach(zz => wheel(g, sd * 0.82, 0.33, zz, 0.33, 0.22));
+  });
+  g.position.set(x, 0, z); g.rotation.y = rotY; parent.add(g);
+  return g;
+}
 function forklift(parent, x, z, rotY = 0, color = '#e8771e', liftLoad = false) {
   const g = new THREE.Group(), bm = mat(color, { roughness: 0.5 });
   box(g, 1.15, 0.9, 2.1, null, 0, 0.75, 0, { material: bm });
@@ -954,6 +979,11 @@ function reachStacker(parent, x, z, rotY = 0) {
   g.position.set(x, 0, z); g.rotation.y = rotY; parent.add(g);
 }
 {
+  // cars parked against the bodega wall (estacionamiento)
+  ['#9aa3ad', '#f2f2f0', '#26303d', '#8a1f1f', '#c9c4ba', '#4f5a68', '#1f3d6b'].forEach((c, i) => {
+    if (i === 5) return;                      // one free stall
+    car(site, 95.75, R.est.z0 + 3.45 + i * 6.1, c, i % 2 ? Math.PI : 0);
+  });
   // trucks parked along Cervantes inside the hatched area: 3 with timber, 1 with a container (cabs toward Juan Macaya)
   rig(trucksG, { x: 3, z: 21.9, rotY: -Math.PI / 2, load: 'timber', cab: '#f2f2f0' });
   rig(trucksG, { x: 3, z: 17.7, rotY: -Math.PI / 2, load: 'timber', cab: '#f2f2f0' });
