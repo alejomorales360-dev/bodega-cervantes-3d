@@ -28,6 +28,10 @@ En el panel, la sección **Stock por ubicación** permite cargar el stock real d
 - **Informe PDF:** si hay un stock cargado, incluye el stock y la ocupación por ubicación.
 - **Privacidad:** el archivo se lee en el navegador. No se sube a ningún servidor; solo queda guardado en ese navegador para la próxima visita.
 
+## Stock en la nube
+
+El stock se puede compartir con todo el equipo a través de Supabase: los administradores publican y el resto lo ve actualizado en vivo, ingresando con su cuenta. Configuración paso a paso en [SETUP-NUBE.md](SETUP-NUBE.md). Mientras `config.js` esté vacío, la página funciona sin nube y el stock queda solo en cada navegador.
+
 ## Capturas e informes
 
 En la barra superior de la página hay dos botones:

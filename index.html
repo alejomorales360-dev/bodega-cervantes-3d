@@ -164,6 +164,13 @@ details#s-map summary{cursor:pointer;font-weight:600}
 .lotmeta{font-size:12.5px;color:var(--muted);margin-top:2px}
 ol.route{margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.5}
 #cli-sum a{color:var(--ink);font-weight:600}
+.cloudcard{margin:0 0 12px}
+.cloudline{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45}
+.cloudline .muted{color:var(--muted);font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;background:#9aa3ad;margin-top:5px;flex:none}
+.dot.ok{background:#2e9d57;box-shadow:0 0 0 3px color-mix(in srgb,#2e9d57 25%,transparent)}
+.loginf{display:grid;gap:6px}
+.loginf input{padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-width:0}
 </style>
 </head>
 <body>
@@ -231,6 +238,7 @@ ol.route{margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.5}
 
     <section>
       <h2>Stock por ubicación</h2>
+      <div id="cloud" class="card stockcard cloudcard" hidden></div>
       <div class="stockbtns">
         <label class="filebtn" for="s-file">Cargar stock (Excel o CSV)</label>
         <input id="s-file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
@@ -278,6 +286,7 @@ ol.route{margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.5}
   </aside>
 </main>
 
+<script src="config.js"></script>
 <script type="importmap">
 {"imports":{
   "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -1588,7 +1597,7 @@ function guessMapping(header, rows) {
   }
   return map;
 }
-function applyStock(raw, map) {
+function applyStock(raw, map, opts = {}) {
   const byLoc = {}, unknown = new Map(), lots = new Map(); let total = 0, totalVol = 0, peq = null;
   for (const r of raw.rows) {
     const code = normCode(r[map.ubic]); const q = map.qty != null ? parseNum(r[map.qty]) : 1;
@@ -1611,7 +1620,8 @@ function applyStock(raw, map) {
   STOCK.data = { byLoc, peq, lots, unknown: [...unknown], total, totalVol, hasVol: map.vol != null, file: raw.file, at: new Date().toLocaleString('es-CL'), map };
   layoutPackages();
   renderStockUI();
-  try { localStorage.setItem('bodega-stock', JSON.stringify({ raw, map })); } catch (e) { /* storage full or blocked */ }
+  if (!opts.fromCloud) { try { localStorage.setItem('bodega-stock', JSON.stringify({ raw, map })); } catch (e) { /* storage full or blocked */ } }
+  if (!opts.fromCloud && opts.publish) publishStock(raw, map);
   if (selected?.startsWith('loc:')) selectLoc(selected.slice(4), false);
 }
 function clearStock() {
@@ -1742,19 +1752,19 @@ async function readStockFile(file) {
     const map = guessMapping(header, rows);
     showMapping(stockRaw, map);
     if (map.ubic == null) { renderStockUI(); $('#s-map').open = true; toast('No encontré la columna de ubicación. Elígela abajo y presiona Aplicar.', 6000); return; }
-    applyStock(stockRaw, map);
-    toast(`Stock cargado: ${fmt(STOCK.data.total)} paquetes en ${Object.keys(STOCK.data.byLoc).length} ubicaciones`, 4000);
+    applyStock(stockRaw, map, { publish: true });
+    if (!(CLOUD.on && CLOUD.admin)) toast(`Stock cargado: ${fmt(STOCK.data.total)} paquetes en ${Object.keys(STOCK.data.byLoc).length} ubicaciones`, 4000);
   } catch (err) { console.error(err); toast(err.message || 'No se pudo leer el archivo.', 6000); }
 }
 $('#s-file').addEventListener('change', e => { const f = e.target.files[0]; if (f) readStockFile(f); e.target.value = ''; });
-$('#s-clear').addEventListener('click', () => { clearStock(); toast('Se quitó el stock; el modelo vuelve a los paquetes de ejemplo'); });
+$('#s-clear').addEventListener('click', () => { clearStock(); if (CLOUD.on && CLOUD.user) { CLOUD.current = null; pullLatest(false); toast('Volviste al stock de la nube'); } else toast('Se quitó el stock; el modelo vuelve a los paquetes de ejemplo'); });
 $('#s-heat').addEventListener('change', () => layoutPackages());
 $('#s-tiers').addEventListener('change', e => { MAXT = +e.target.value; layoutPackages(); renderStockUI(); if (selected?.startsWith('loc:')) selectLoc(selected.slice(4), false); });
 $('#s-apply').addEventListener('click', () => {
   if (!stockRaw) return;
   const map = {}; document.querySelectorAll('#s-map-fields select').forEach(sel => { if (sel.value !== '') map[sel.dataset.k] = +sel.value; });
   if (map.ubic == null) { toast('Elige la columna de ubicación.', 3000); return; }
-  applyStock(stockRaw, map); toast('Columnas aplicadas');
+  applyStock(stockRaw, map, { publish: true }); if (!(CLOUD.on && CLOUD.admin)) toast('Columnas aplicadas');
 });
 $('#s-template').addEventListener('click', () => {
   const rows = [['Ubicacion', 'Producto', 'Tipo', 'Largo_m', 'Paquetes'],
@@ -1767,8 +1777,88 @@ $('#s-template').addEventListener('click', () => {
 view.addEventListener('dragover', e => { e.preventDefault(); });
 view.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) readStockFile(f); });
 // restore the last loaded stock in this browser
-try { const sv = JSON.parse(localStorage.getItem('bodega-stock') || 'null'); if (sv?.raw) { stockRaw = sv.raw; showMapping(sv.raw, sv.map); applyStock(sv.raw, sv.map); } } catch (e) {}
+/* ---------- Cloud (Supabase): shared stock for the whole team ---------- */
+const CLOUD = { cfg: window.BODEGA_CLOUD, sb: null, user: null, admin: false, current: null, on: false };
+CLOUD.on = !!(CLOUD.cfg && CLOUD.cfg.url && CLOUD.cfg.anonKey);
+const compactRaw = (raw, map) => {          // keep only the mapped columns, to keep the upload small
+  const idx = [...new Set(Object.values(map))].sort((a, b) => a - b), pos = {};
+  idx.forEach((c, i) => (pos[c] = i));
+  const m2 = {}; Object.entries(map).forEach(([k, c]) => (m2[k] = pos[c]));
+  return { raw: { header: idx.map(c => raw.header[c]), rows: raw.rows.map(r => idx.map(c => r[c] ?? '')), file: raw.file }, map: m2 };
+};
+let sbLoader;
+const loadSB = () => sbLoader ||= new Promise((ok, fail) => {
+  if (window.supabase) return ok(window.supabase);
+  const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+  s.onload = () => ok(window.supabase); s.onerror = () => { sbLoader = null; fail(new Error('No se pudo conectar con la nube. Revisa tu conexión a internet.')); };
+  document.head.appendChild(s);
+});
+function renderCloudUI(msg) {
+  const box = $('#cloud'); if (!CLOUD.on) { box.hidden = true; return; }
+  box.hidden = false;
+  if (!CLOUD.user) {
+    box.innerHTML = `<p class="small" style="margin-top:0">El stock del equipo está en la nube. Ingresa para verlo.</p>
+      <form id="cl-login" class="loginf">
+        <input id="cl-email" type="email" placeholder="Correo" autocomplete="username" required aria-label="Correo">
+        <input id="cl-pass" type="password" placeholder="Clave" autocomplete="current-password" required aria-label="Clave">
+        <button type="submit" class="filebtn">Ingresar</button>
+      </form><div class="msg" id="cl-msg">${msg ? esc(msg) : ''}</div>`;
+    $('#cl-login').addEventListener('submit', async e => {
+      e.preventDefault(); $('#cl-msg').textContent = 'Ingresando…';
+      const { error } = await CLOUD.sb.auth.signInWithPassword({ email: $('#cl-email').value.trim(), password: $('#cl-pass').value });
+      if (error) $('#cl-msg').textContent = 'Correo o clave incorrectos.';
+    });
+    return;
+  }
+  const c = CLOUD.current;
+  box.innerHTML = `<div class="cloudline"><span class="dot ${c ? 'ok' : ''}"></span><div>
+      ${c ? `<b>Stock en la nube</b><br>${esc(c.file || '')}<br><span class="muted">Publicado ${new Date(c.created_at).toLocaleString('es-CL')} por ${esc(c.uploaded_by || '—')}</span>` : '<b>Aún no hay stock publicado en la nube.</b>'}
+    </div></div>
+    <p class="small">${CLOUD.admin ? 'Eres administrador: al cargar un archivo se publica para todo el equipo.' : 'Puedes ver el stock del equipo. Si cargas un archivo, se ve solo en tu navegador.'}</p>
+    ${msg ? `<p class="warnline">${esc(msg)}</p>` : ''}
+    <button id="cl-out" type="button" class="linkbtn">Salir (${esc(CLOUD.user.email)})</button>`;
+  $('#cl-out').addEventListener('click', () => CLOUD.sb.auth.signOut());
+}
+async function pullLatest(announce) {
+  const { data, error } = await CLOUD.sb.from('stock_snapshots').select('id, created_at, file, uploaded_by, payload').order('created_at', { ascending: false }).limit(1);
+  if (error) { renderCloudUI('No se pudo leer el stock de la nube: ' + error.message); return; }
+  const row = data?.[0];
+  if (!row) { CLOUD.current = null; renderCloudUI(); return; }
+  if (CLOUD.current?.id === row.id) return;
+  CLOUD.current = { id: row.id, created_at: row.created_at, file: row.file, uploaded_by: row.uploaded_by };
+  stockRaw = row.payload.raw; showMapping(stockRaw, row.payload.map); applyStock(stockRaw, row.payload.map, { fromCloud: true });
+  renderCloudUI();
+  if (announce) toast(`Stock actualizado: ${row.file || ''}`, 4000);
+}
+async function publishStock(raw, map) {
+  if (!CLOUD.on || !CLOUD.user || !CLOUD.admin) return;
+  toast('Publicando en la nube…', 0);
+  const payload = compactRaw(raw, map);
+  const { data, error } = await CLOUD.sb.from('stock_snapshots').insert({ file: raw.file, uploaded_by: CLOUD.user.email, lotes: STOCK.data.total, volumen: Math.round(STOCK.data.totalVol * 1000) / 1000, payload }).select('id, created_at, file, uploaded_by').single();
+  if (error) { toast('No se pudo publicar: ' + error.message, 6000); renderCloudUI('El stock se ve en tu navegador, pero no se publicó. ' + error.message); return; }
+  CLOUD.current = data; renderCloudUI(); toast('Stock publicado: todo el equipo ya lo ve', 4000);
+}
+async function initCloud() {
+  if (!CLOUD.on) return;
+  renderCloudUI();
+  try {
+    const lib = await loadSB();
+    CLOUD.sb = lib.createClient(CLOUD.cfg.url, CLOUD.cfg.anonKey);
+  } catch (e) { $('#cloud').innerHTML = `<p class="warnline">${esc(e.message)}</p>`; return; }
+  const onSession = async session => {
+    CLOUD.user = session?.user || null; CLOUD.admin = false; CLOUD.current = null;
+    if (!CLOUD.user) { renderCloudUI(); return; }
+    const { data } = await CLOUD.sb.rpc('es_admin'); CLOUD.admin = data === true;
+    renderCloudUI(); await pullLatest(false);
+  };
+  CLOUD.sb.auth.onAuthStateChange((ev, session) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT' || ev === 'INITIAL_SESSION') setTimeout(() => onSession(session), 0); });
+  CLOUD.sb.channel('stock').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stock_snapshots' }, () => CLOUD.user && pullLatest(true)).subscribe();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && CLOUD.user) pullLatest(true); });
+}
+
+if (!CLOUD.on) { try { const sv = JSON.parse(localStorage.getItem('bodega-stock') || 'null'); if (sv?.raw) { stockRaw = sv.raw; showMapping(sv.raw, sv.map); applyStock(sv.raw, sv.map); } } catch (e) {} }
 renderStockUI();
+initCloud();
 
 window.bodega3d = { camera, controls, setView, fly, L2W, selectZone, selectLoc, snapshot, buildReport };
 applyToggles();
