@@ -9,6 +9,22 @@ Es una sola página web (`index.html`), sin instalación ni compilación. Usa [t
 - **En línea:** https://alejomorales360-dev.github.io/bodega-cervantes-3d/ (se publica solo con cada cambio en `main`).
 - **En tu computador:** abre `index.html` en el navegador. Necesita internet para cargar three.js y las fuentes.
 
+## Imágenes
+
+Renders en 4K (3840 × 2160) en la carpeta `renders/`:
+
+| Vista | Archivo |
+|---|---|
+| Isométrica general | `renders/1-isometrica.jpg` |
+| Patio con contenedores y camiones | `renders/2-patio.jpg` |
+| Interior con ubicaciones A–F | `renders/3-bodega.jpg` |
+| Portones y alero | `renders/4-portones.jpg` |
+| Oficinas, descanso y área verde | `renders/5-oficinas.jpg` |
+
+Para generar capturas en alta resolución desde el navegador, abre la página con `#hd` al final de la dirección (sombras y resolución más altas).
+
+![Vista isométrica](renders/1-isometrica.jpg)
+
 ## Qué incluye
 
 - **Superficies según la planilla:** bodega principal (93,8 × 61,7 m), alero en voladizo (93,8 × 13,3 m), bodega pequeña (62,5 × 8 m), sector oficinas (15 × 30 m), estacionamiento (4,2 × 62,49 m), patio delantero (92 × 48 m) y patio trasero (100 × 13,3 m).
@@ -21,7 +37,7 @@ Es una sola página web (`index.html`), sin instalación ni compilación. Usa [t
   - Zona de descanso, garita de cámaras y área verde.
   - Sendero peatonal y zonas seguras junto a los portones.
   - Contenedores, camiones y grúa en el patio.
-- **Vistas:** general, planta, frente e interior. Se pueden mostrar u ocultar el techo, las etiquetas, las cotas, las ubicaciones y los vehículos.
+- **Vistas:** general, planta, frente, isométrica (sin techo, como maqueta) e interior. Se pueden mostrar u ocultar el techo, las etiquetas, las cotas, las ubicaciones y los vehículos.
 - **Búsqueda de ubicaciones:** escribes un código (por ejemplo `C-7`) o lo tocas en el minimapa, y el modelo te lleva hasta esa ubicación.
 
 ## Supuestos pendientes de confirmar

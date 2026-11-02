@@ -58,6 +58,8 @@ button,input{font:inherit;color:inherit}
 .lbl b{display:block;font-weight:700}
 .lbl span{font:500 10.5px var(--f-mono);color:var(--muted)}
 .lbl.sel{border-color:var(--mark);box-shadow:0 0 0 2px var(--mark)}
+.lbl.loc{font:600 10.5px var(--f-mono);padding:1px 5px;background:#2f63a6;color:#fff;border-color:#244f86}
+.labels.no-locs .lbl.loc{display:none}
 .lbl.tag{font-size:10.5px;padding:2px 6px;background:#f2c230;color:#1b1b1b;border-color:#c99d10}
 .street{font:600 11px var(--f-display);font-stretch:85%;letter-spacing:.18em;text-transform:uppercase;color:#f1f1ee;
   text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
@@ -146,6 +148,7 @@ ul.list li+li{margin-top:5px}
     <button id="v-general" type="button" aria-pressed="true">General</button>
     <button id="v-planta" type="button" aria-pressed="false">Planta</button>
     <button id="v-frente" type="button" aria-pressed="false">Frente</button>
+    <button id="v-iso" type="button" aria-pressed="false">Isométrica</button>
     <button id="v-interior" type="button" aria-pressed="false">Interior</button>
   </div>
 </header>
@@ -308,7 +311,10 @@ catch (e) {
   view.insertAdjacentHTML('beforeend', '<div class="err">Este navegador no pudo iniciar WebGL, así que el modelo 3D no se puede mostrar. La tabla y las ubicaciones siguen disponibles.</div>');
   throw e;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const HD = location.hash === '#hd';
+renderer.setPixelRatio(Math.min(devicePixelRatio, HD ? 3 : 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 view.prepend(renderer.domElement);
@@ -327,12 +333,12 @@ controls.minDistance = 5;
 controls.maxDistance = 700;
 
 const CX = W / 2, CZ = 70;
-scene.add(new THREE.HemisphereLight(0xffffff, 0x857c6c, 0.95));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x857c6c, 1.05));
 const sun = new THREE.DirectionalLight(0xffffff, 1.7);
 sun.position.copy(L2W(CX - 90, 150, CZ - 75)); // sun from the north (southern hemisphere)
 sun.target.position.copy(L2W(CX, 0, CZ));
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(HD ? 4096 : 2048, HD ? 4096 : 2048);
 Object.assign(sun.shadow.camera, { left: -130, right: 130, top: 130, bottom: -130, near: 10, far: 420 });
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.04;
@@ -399,18 +405,6 @@ function hatchTexture() {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-function codeTexture(text) {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
-  const g = c.getContext('2d');
-  g.fillStyle = '#4a7fc0'; g.fillRect(0, 0, 256, 128);
-  g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 6; g.strokeRect(5, 5, 246, 118);
-  g.fillStyle = '#ffffff'; g.font = '700 64px Archivo, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(text, 128, 68);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  t.flipY = false; // reads correctly from Pedro Montt in the mirrored site
-  return t;
-}
-
 /* ---------- Surroundings ---------- */
 const world = new THREE.Group(); root.add(world);
 {
@@ -493,8 +487,17 @@ let roofG, wallMat;
   const H = 10, t = 0.3, bw = B.x1 - B.x0, bd = B.z1 - B.z0, bcx = (B.x0 + B.x1) / 2, bcz = (B.z0 + B.z1) / 2;
   [[bw, t, bcx, B.z0 + t / 2], [bw, t, bcx, B.z1 - t / 2], [t, bd, B.x0 + t / 2, bcz], [t, bd, B.x1 - t / 2, bcz]]
     .forEach(([w, d, x, z]) => box(site, w, H, d, null, x, H / 2, z, { material: wallMat, zone: 'bodega' }));
+  const doorM = (() => {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 256;
+    const g = c.getContext('2d'); g.fillStyle = '#9aa3ad'; g.fillRect(0, 0, 64, 256);
+    for (let y = 0; y < 256; y += 16) { g.fillStyle = '#7d8691'; g.fillRect(0, y, 64, 3); g.fillStyle = '#b4bcc5'; g.fillRect(0, y + 3, 64, 2); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.5, metalness: 0.35 });
+  })();
   DOORS.forEach((x, i) => {
-    box(site, 5.5, 5, 0.14, '#56606b', x, 2.5, B.z0 - 0.08, { zone: 'bodega' });
+    box(site, 5.5, 5, 0.14, null, x, 2.5, B.z0 - 0.08, { zone: 'bodega', material: doorM });
+    box(site, 6.1, 0.35, 0.3, '#3c4148', x, 5.2, B.z0 - 0.15, { cast: false });
+    [-1, 1].forEach(sd => { box(site, 0.3, 5.2, 0.3, '#3c4148', x + sd * 2.9, 2.6, B.z0 - 0.15, { cast: false }); box(site, 0.25, 1.1, 0.25, '#f2c230', x + sd * 3.4, 0.55, B.z0 - 0.7); });
     box(site, 5.5, 0.02, 1.4, '#e5a900', x, 0.06, B.z0 - 0.8, { cast: false });
     label(site, `Portón ${i + 1}`, 'lbl tag', x, 6, B.z0 - 0.3);
   });
@@ -652,65 +655,180 @@ let roofG, wallMat;
   dim(dims, [O.x0 - 0.5, 5.5, O.z0], [O.x0 - 0.5, 5.5, O.z1], '30 m');
 }
 
-/* ---------- Storage locations A–F ---------- */
+/* ---------- Storage locations A–F: floor marking + palletised stock ---------- */
+const locLabels = [];
 {
-  const side = new THREE.MeshStandardMaterial({ color: '#4a7fc0', roughness: 0.7, transparent: true, opacity: 0.9 });
   const lineM = mat('#f2c230');
+  const floorM = new THREE.MeshStandardMaterial({ color: '#4a7fc0', roughness: 0.8, transparent: true, opacity: 0.35 });
+  const hitM = new THREE.MeshBasicMaterial({ visible: false });
+  const cellX = 1.32, cellZ = 1.12, tierH = 1.12;
+  const palGeo = new THREE.BoxGeometry(1.2, 0.14, 1.0), loadGeo = new THREE.BoxGeometry(1.14, 0.96, 0.96);
+  const pal = [], load = [], loadCol = [];
+  const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(11);
+  const colors = ['#c99a62', '#b9844f', '#d8b07a', '#e9e6df', '#c99a62', '#a8794a'].map(c => new THREE.Color(c));
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(1, 1, 1), P = new THREE.Vector3();
   for (const [code, r] of Object.entries(LOCS)) {
-    const top = new THREE.MeshStandardMaterial({ map: codeTexture(code), roughness: 0.7 });
-    const m = new THREE.Mesh(new THREE.BoxGeometry(r.x1 - r.x0 - 0.3, r.h, r.z1 - r.z0 - 0.3), [side, side, top, side, side, side]);
-    m.position.set((r.x0 + r.x1) / 2, r.h / 2, (r.z0 + r.z1) / 2);
-    m.castShadow = m.receiveShadow = true;
-    m.userData.loc = code;
-    locsG.add(m); pickables.push(m);
-    // floor outline
     const w = r.x1 - r.x0, d = r.z1 - r.z0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
-    [[w, 0.1, cx, r.z0], [w, 0.1, cx, r.z1], [0.1, d, r.x0, cz], [0.1, d, r.x1, cz]]
-      .forEach(([a, b, x, z]) => box(locsG, a, 0.02, b, null, x, 0.06, z, { cast: false, material: lineM }));
+    floor(locsG, { x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1 }, null, 0.055, null, floorM);
+    [[w, 0.12, cx, r.z0], [w, 0.12, cx, r.z1], [0.12, d, r.x0, cz], [0.12, d, r.x1, cz]]
+      .forEach(([a, b, x, z]) => box(locsG, a, 0.02, b, null, x, 0.065, z, { cast: false, material: lineM }));
+    const nx = Math.floor((w - 0.3) / cellX), nz = Math.max(1, Math.floor((d - 0.2) / cellZ));
+    const ox = cx - (nx - 1) * cellX / 2, oz = cz - (nz - 1) * cellZ / 2;
+    let maxT = 0;
+    const blockTiers = rnd() < 0.55 ? 3 : 2, base = colors[Math.floor(rnd() * colors.length)];
+    const emptyFrom = rnd() < 0.35 ? Math.floor(nx * (0.55 + rnd() * 0.35)) : nx; // some blocks partly picked
+    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+      if (i >= emptyFrom && rnd() < 0.8) continue;
+      const tiers = i >= emptyFrom ? 1 : blockTiers;
+      maxT = Math.max(maxT, tiers);
+      for (let t = 0; t < tiers; t++) {
+        const y = t * tierH;
+        pal.push(M.compose(P.set(ox + i * cellX, y + 0.07, oz + j * cellZ), Q, S).clone());
+        load.push(M.compose(P.set(ox + i * cellX, y + 0.14 + 0.48, oz + j * cellZ), Q, S).clone());
+        loadCol.push(rnd() < 0.1 ? colors[Math.floor(rnd() * colors.length)] : base);
+      }
+    }
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(w, r.h, d), hitM);
+    hit.position.set(cx, r.h / 2, cz); hit.userData.loc = code; locsG.add(hit); pickables.push(hit);
+    const lo = label(locsG, code, 'lbl loc', cx, Math.max(1, maxT) * tierH + 0.6, cz);
+    locLabels.push([lo, new THREE.Vector3()]);
   }
+  const inst = (geo, material, arr, cols) => {
+    const m = new THREE.InstancedMesh(geo, material, arr.length);
+    arr.forEach((mm, i) => { m.setMatrixAt(i, mm); if (cols) m.setColorAt(i, cols[i]); });
+    m.castShadow = m.receiveShadow = true; locsG.add(m);
+  };
+  inst(palGeo, mat('#9c7448'), pal);
+  inst(loadGeo, new THREE.MeshStandardMaterial({ roughness: 0.85 }), load, loadCol);
 }
 
-/* ---------- Vehicles (scale reference, as drawn in the plan) ---------- */
-{
-  const truckZ = (x, zRear, cab) => { // trailer along z, rear against the portón
-    const g = new THREE.Group();
-    box(g, 2.5, 3.0, 13.6, '#f1efea', 0, 2.6, -6.8); box(g, 2.5, 0.9, 13.6, '#3c4148', 0, 0.75, -6.8);
-    box(g, 2.5, 3.0, 2.4, cab, 0, 1.9, -15.2);
-    g.position.set(x, 0, zRear); trucksG.add(g);
-  };
-  const truckX = (xTail, z, len, cabRight, cab, load) => { // along x
-    const g = new THREE.Group();
-    const dir = cabRight ? 1 : -1;
-    box(g, len, 1.3, 2.5, '#9a9ea4', dir * len / 2, 0.85, 0);
-    if (load) box(g, len - 0.6, 1.6, 2.3, load, dir * len / 2, 2.3, 0);
-    box(g, 2.4, 3.0, 2.5, cab, dir * (len + 1.4), 1.8, 0);
-    g.position.set(xTail, 0, z); trucksG.add(g);
-  };
-  // trucks parked by Cervantes (3 with timber, 1 with an empty trailer)
-  truckX(4, 21.9, 12.5, true, '#f2f2f0', '#e4c48f');
-  truckX(4, 17.7, 12.5, true, '#f2f2f0', '#e4c48f');
-  truckX(4, 13.3, 12.5, true, '#f2f2f0', '#e4c48f');
-  truckX(4, 9.2, 12.5, true, '#c23b2e', null);
-  truckX(78, 27, 13, false, '#c23b2e', null);
-  // 15 containers (40') in a row in front of the alero, as drawn in the plan
-  const cc = document.createElement('canvas'); cc.width = 128; cc.height = 32;
-  const cg = cc.getContext('2d'); cg.fillStyle = '#a9adb1'; cg.fillRect(0, 0, 128, 32);
-  cg.fillStyle = '#8d9196'; for (let i = 0; i < 128; i += 8) cg.fillRect(i, 0, 3, 32);
-  const ct = new THREE.CanvasTexture(cc); ct.wrapS = ct.wrapT = THREE.RepeatWrapping; ct.colorSpace = THREE.SRGBColorSpace;
-  const sideT = ct.clone(); sideT.needsUpdate = true; sideT.repeat.set(6, 1);
-  const ribbed = new THREE.MeshStandardMaterial({ map: sideT, roughness: 0.7, metalness: 0.2 });
-  const plain = mat('#a3a7ab', { metalness: 0.2, roughness: 0.7 }), doorEnd = mat('#8a8e93', { metalness: 0.2, roughness: 0.7 });
-  for (let i = 0; i < 15; i++) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(2.44, 2.59, 12.19), [ribbed, ribbed, plain, plain, doorEnd, doorEnd]);
-    m.position.set(23.5 + i * 3.05, 1.295, 38.2); m.castShadow = m.receiveShadow = true; trucksG.add(m);
+/* ---------- Vehicles and equipment (as drawn in the plan) ---------- */
+const tireM = mat('#1d1f22', { roughness: 0.95 }), hubM = mat('#b8bcc2', { metalness: 0.6, roughness: 0.4 });
+const glassM = mat('#1f2a36', { metalness: 0.4, roughness: 0.15 }), darkM = mat('#2b2e33'), chromeM = mat('#c9ccd0', { metalness: 0.8, roughness: 0.25 });
+const tireGeo = new THREE.CylinderGeometry(1, 1, 1, 18);
+function wheel(g, x, y, z, r = 0.52, w = 0.32) {
+  const t = new THREE.Mesh(tireGeo, tireM); t.scale.set(r, w, r); t.rotation.z = Math.PI / 2; t.position.set(x, y ?? r, z); t.castShadow = true; g.add(t);
+  const h = new THREE.Mesh(tireGeo, hubM); h.scale.set(r * 0.55, w + 0.02, r * 0.55); h.rotation.z = Math.PI / 2; h.position.copy(t.position); g.add(h);
+}
+// 40' container (12.19 × 2.44 × 2.59) with corrugated sides, door end, corner castings
+const contTex = (() => {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 256, 64);
+  for (let i = 0; i < 256; i += 16) { const gr = g.createLinearGradient(i, 0, i + 16, 0); gr.addColorStop(0, '#9a9a9a'); gr.addColorStop(.3, '#ffffff'); gr.addColorStop(.55, '#e6e6e6'); gr.addColorStop(.8, '#8c8c8c'); gr.addColorStop(1, '#b0b0b0'); g.fillStyle = gr; g.fillRect(i, 0, 16, 64); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const contMats = new Map();
+function container(parent, color, x, y, z, rotY = 0) {
+  if (!contMats.has(color)) {
+    const side = contTex.clone(); side.needsUpdate = true; side.repeat.set(2.8, 1);
+    const end = contTex.clone(); end.needsUpdate = true; end.repeat.set(0.6, 1);
+    contMats.set(color, {
+      side: new THREE.MeshStandardMaterial({ color, map: side, roughness: 0.6, metalness: 0.25 }),
+      end: new THREE.MeshStandardMaterial({ color, map: end, roughness: 0.6, metalness: 0.25 }),
+      top: new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.25 }),
+      rail: new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.72), roughness: 0.6, metalness: 0.3 }),
+    });
   }
+  const m = contMats.get(color), g = new THREE.Group(), L = 12.19, W = 2.44, H = 2.59;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(W, H, L), [m.side, m.side, m.top, m.top, m.end, m.end]);
+  body.position.y = H / 2; body.castShadow = body.receiveShadow = true; g.add(body);
+  [-1, 1].forEach(sx => [0.06, H - 0.06].forEach(y => box(g, 0.08, 0.14, L, null, sx * (W / 2 + 0.01), y, 0, { material: m.rail, cast: false })));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const y of [0.09, H - 0.09]) box(g, 0.2, 0.18, 0.2, null, sx * (W / 2 - 0.06), y, sz * (L / 2 - 0.06), { material: m.rail, cast: false });
+  [-0.85, -0.35, 0.35, 0.85].forEach(xx => box(g, 0.05, H - 0.4, 0.05, null, xx, H / 2, L / 2 + 0.04, { material: chromeM, cast: false }));
+  box(g, 0.02, H - 0.25, 0.05, null, 0, H / 2, L / 2 + 0.02, { material: m.rail, cast: false });
+  g.position.set(x, y, z); g.rotation.y = rotY; parent.add(g);
+  return g;
+}
+// tractor + semitrailer. Local frame: trailer rear at z = 0, rig extends toward -z (cab at the front)
+function rig(parent, { cab = '#f2f2f0', load = 'none', x, z, rotY = 0, contColor = '#a9adb1' }) {
+  const g = new THREE.Group(), cabM = mat(cab, { roughness: 0.45, metalness: 0.2 });
+  // tractor
+  box(g, 1.0, 0.3, 6.2, null, 0, 0.95, -15.2, { material: darkM });
+  box(g, 2.5, 2.6, 2.4, null, 0, 2.45, -16.85, { material: cabM });
+  box(g, 2.3, 0.7, 1.7, null, 0, 4.05, -16.6, { material: cabM });              // roof fairing
+  box(g, 2.2, 0.95, 0.05, null, 0, 3.15, -18.07, { material: glassM, cast: false });
+  [-1, 1].forEach(s => {
+    box(g, 0.05, 0.75, 1.0, null, s * 1.26, 3.15, -17.3, { material: glassM, cast: false });
+    box(g, 0.08, 0.5, 0.25, null, s * 1.45, 3.0, -17.9, { material: darkM, cast: false });   // mirrors
+    box(g, 0.25, 0.12, 0.15, null, s * 0.95, 1.2, -18.12, { material: mat('#fff7d6', { emissive: '#fff2c0', emissiveIntensity: 0.3 }), cast: false });
+    const tank = new THREE.Mesh(tireGeo, chromeM); tank.scale.set(0.32, 1.2, 0.32); tank.rotation.x = Math.PI / 2; tank.position.set(s * 1.05, 0.85, -15.0); g.add(tank);
+  });
+  box(g, 1.7, 0.8, 0.05, null, 0, 1.85, -18.08, { material: chromeM, cast: false }); // grille
+  box(g, 2.5, 0.35, 0.3, null, 0, 0.85, -18.1, { material: darkM });                 // bumper
+  const ex = new THREE.Mesh(tireGeo, chromeM); ex.scale.set(0.09, 2.2, 0.09); ex.position.set(1.0, 3.6, -15.5); g.add(ex);
+  [-1, 1].forEach(s => { wheel(g, s * 1.08, null, -16.9); wheel(g, s * 0.98, null, -13.75, 0.52, 0.5); wheel(g, s * 0.98, null, -12.45, 0.52, 0.5); });
+  // trailer
+  const deckY = 1.35;
+  box(g, 2.5, 0.28, 13.6, null, 0, deckY, -6.8, { material: darkM });
+  [-1, 1].forEach(s => { [-3.3, -2.0, -0.7].forEach(zz => wheel(g, s * 0.98, null, zz, 0.48, 0.5)); box(g, 0.12, 1.0, 0.12, null, s * 0.9, 0.6, -10.8, { material: darkM }); });
+  box(g, 2.5, 0.25, 0.12, null, 0, 0.85, -0.05, { material: mat('#c23b2e') });     // rear bumper
+  if (load === 'timber') {
+    box(g, 2.5, 0.06, 13.6, null, 0, deckY + 0.17, -6.8, { material: mat('#8a6440') });
+    [-11.3, -6.8, -2.3].forEach(zc => [0, 1].forEach(t => {
+      const y = deckY + 0.28 + t * 1.2 + 0.55;
+      box(g, 2.3, 1.1, 4.1, null, 0, y, zc, { material: mat(t ? '#e6c896' : '#dcb983') });
+      box(g, 2.32, 0.06, 4.12, null, 0, y - 0.58, zc, { material: mat('#7a5a36'), cast: false });
+      [-1.2, 1.2].forEach(dz => box(g, 2.36, 1.12, 0.06, null, 0, y, zc + dz, { material: darkM, cast: false })); // straps
+    }));
+  } else if (load === 'container') {
+    container(g, contColor, 0, deckY + 0.14, -6.8);
+  } else {
+    box(g, 2.5, 0.08, 13.6, null, 0, deckY + 0.18, -6.8, { material: mat('#6d7278') });
+  }
+  g.position.set(x, 0, z); g.rotation.y = rotY; parent.add(g);
+  return g;
+}
+function forklift(parent, x, z, rotY = 0, color = '#e8771e', liftLoad = false) {
+  const g = new THREE.Group(), bm = mat(color, { roughness: 0.5 });
+  box(g, 1.15, 0.9, 2.1, null, 0, 0.75, 0, { material: bm });
+  box(g, 1.15, 0.7, 0.55, null, 0, 1.2, 0.85, { material: darkM });                 // counterweight
+  box(g, 0.6, 0.12, 0.55, null, 0, 1.3, 0.05, { material: darkM });                // seat
+  box(g, 0.5, 0.5, 0.1, null, 0, 1.55, 0.3, { material: darkM });
+  [[-0.5, -0.45], [0.5, -0.45], [-0.5, 0.75], [0.5, 0.75]].forEach(([px, pz]) => box(g, 0.07, 1.5, 0.07, null, px, 1.95, pz, { material: darkM }));
+  box(g, 1.1, 0.06, 1.3, null, 0, 2.72, 0.15, { material: darkM });                // overhead guard
+  [-0.35, 0.35].forEach(px => box(g, 0.1, 2.6, 0.12, null, px, 1.4, -1.15, { material: darkM })); // mast
+  box(g, 0.9, 0.5, 0.06, null, 0, liftLoad ? 1.3 : 0.45, -1.22, { material: darkM });
+  [-0.3, 0.3].forEach(px => box(g, 0.12, 0.05, 1.1, null, px, liftLoad ? 1.08 : 0.12, -1.8, { material: chromeM }));
+  if (liftLoad) { box(g, 1.2, 0.14, 1.0, '#9c7448', 0, 1.18, -1.8); box(g, 1.14, 0.96, 0.96, '#c99a62', 0, 1.73, -1.8); }
+  [-0.5, 0.5].forEach(px => { wheel(g, px, 0.33, -0.7, 0.33, 0.25); wheel(g, px, 0.28, 0.75, 0.28, 0.22); });
+  g.position.set(x, 0, z); g.rotation.y = rotY; parent.add(g);
+}
+function reachStacker(parent, x, z, rotY = 0) {
+  const g = new THREE.Group(), y = mat('#e0a800', { roughness: 0.5 });
+  box(g, 3.4, 1.3, 8.4, null, 0, 1.55, 0, { material: y });                       // chassis
+  box(g, 3.6, 1.6, 1.8, null, 0, 2.0, 4.0, { material: y });                       // counterweight
+  [-1, 1].forEach(s => { wheel(g, s * 1.45, 0.9, -2.6, 0.9, 0.6); wheel(g, s * 1.95, 0.9, -2.6, 0.9, 0.45); wheel(g, s * 1.45, 0.8, 2.9, 0.8, 0.55); });
+  box(g, 1.7, 2.0, 2.0, null, -0.6, 3.2, 0.8, { material: y });                    // cab
+  box(g, 1.72, 1.2, 2.02, null, -0.6, 3.6, 0.8, { material: glassM, cast: false });
+  box(g, 1.9, 0.12, 2.2, null, -0.6, 4.25, 0.8, { material: darkM });
+  const boom = new THREE.Group(); boom.position.set(0.8, 3.0, 3.0); boom.rotation.x = 0.42; g.add(boom);
+  box(boom, 1.1, 1.1, 9.5, null, 0, 0, -4.75, { material: y });
+  box(boom, 0.85, 0.85, 4.0, null, 0, 0, -11.2, { material: mat('#c99400') });
+  box(boom, 0.4, 0.4, 3.5, null, 0, -0.9, -3.5, { material: chromeM });          // lift cylinder
+  const sp = new THREE.Group(); sp.position.set(0.8, 7.4, -9.0); g.add(sp);
+  box(sp, 6.1, 0.45, 0.7, null, 0, 0, 0, { material: y });
+  box(sp, 0.9, 0.9, 0.9, null, 0, 0.4, 0, { material: darkM });
+  [-1, 1].forEach(s => { box(sp, 0.6, 0.35, 2.44, null, s * 3.2, -0.1, 0, { material: y }); });
+  g.position.set(x, 0, z); g.rotation.y = rotY; parent.add(g);
+}
+{
+  // trucks parked along Cervantes inside the hatched area: 3 with timber, 1 with a container (cabs toward Juan Macaya)
+  rig(trucksG, { x: 3, z: 21.9, rotY: -Math.PI / 2, load: 'timber', cab: '#f2f2f0' });
+  rig(trucksG, { x: 3, z: 17.7, rotY: -Math.PI / 2, load: 'timber', cab: '#f2f2f0' });
+  rig(trucksG, { x: 3, z: 13.5, rotY: -Math.PI / 2, load: 'timber', cab: '#2a5d9a' });
+  rig(trucksG, { x: 3, z: 9.3, rotY: -Math.PI / 2, load: 'container', cab: '#c23b2e', contColor: '#a9adb1' });
+  // container truck waiting near the Macaya side (cab toward Cervantes)
+  rig(trucksG, { x: 78, z: 27, rotY: Math.PI / 2, load: 'container', cab: '#c23b2e', contColor: '#9fa4a9' });
+  // 15 containers in a row in front of the alero
+  const greys = ['#a9adb1', '#9fa4a9', '#b3b6b9', '#a3a7ab'];
+  for (let i = 0; i < 15; i++) container(trucksG, greys[i % 4], 23.5 + i * 3.05, 0, 38.2);
   label(trucksG, 'Contenedores', 'lbl tag', 45, 4, 38.2);
-  // container handler next to the trailers
-  const rs = new THREE.Group();
-  box(rs, 3.8, 2.2, 8, '#d9a400', 0, 1.6, 0); box(rs, 2.2, 2.2, 2.6, '#2c3a4b', 0, 3.8, 1.5);
-  const boom = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 10), mat('#d9a400')); boom.position.set(0, 5, -3); boom.rotation.x = 0.35; rs.add(boom);
-  box(rs, 6, 0.4, 0.6, '#3c4148', 0, 6.4, -7.5);
-  rs.position.set(73, 0, 39); trucksG.add(rs);
+  reachStacker(trucksG, 74, 41, 0);
+  // forklifts: yard, docks and aisles
+  forklift(trucksG, 18, 52, 0.4); forklift(trucksG, 40.5, 55, -0.2, '#e8771e', true);
+  forklift(trucksG, 71, 53, 1.2); forklift(trucksG, 84, 34, -2.4, '#f2b705');
+  forklift(trucksG, DOORS[1], 80, Math.PI, '#e8771e', true); forklift(trucksG, DOORS[3], 101, 0, '#e8771e', true);
+  forklift(trucksG, DOORS[4], 70, Math.PI / 2, '#f2b705');
 }
 
 /* ---------- Selection ---------- */
@@ -749,7 +867,8 @@ function selectLoc(code, flyTo = true) {
   if (!$('#t-locs').checked) $('#t-locs').checked = true;
   if (!interior) {
     interior = true;
-    ['general', 'planta', 'frente', 'interior'].forEach(n => $('#v-' + n).setAttribute('aria-pressed', String(n === 'interior')));
+    iso = false;
+    ['general', 'planta', 'frente', 'iso', 'interior'].forEach(n => $('#v-' + n).setAttribute('aria-pressed', String(n === 'interior')));
   }
   applyToggles();
   highlight(r); markUI(selected);
@@ -780,23 +899,25 @@ const views = {
   general:  () => [L2W(W + 60, 100, -70), L2W(46, 0, 62)],
   planta:   () => [L2W(CX, 275, CZ - 0.5), L2W(CX, 0, CZ)],
   frente:   () => [L2W(CX - 8, 26, -60), L2W(CX, 6, 58)],
+  iso:      () => [L2W(W + 85, 115, -75), L2W(47, 0, 66)],
   interior: () => { const B = R.bodega; return [L2W(B.x1 + 4, 24, B.z0 - 6), L2W(44, 1, 96)]; },
 };
-let interior = false;
+let interior = false, iso = false;
 function setView(name) {
-  ['general', 'planta', 'frente', 'interior'].forEach(n => $('#v-' + n).setAttribute('aria-pressed', String(n === name)));
-  interior = name === 'interior';
+  ['general', 'planta', 'frente', 'iso', 'interior'].forEach(n => $('#v-' + n).setAttribute('aria-pressed', String(n === name)));
+  interior = name === 'interior'; iso = name === 'iso';
   applyToggles();
   const [p, t] = views[name]();
   fly(p, t);
 }
 function applyToggles() {
-  roofG.visible = $('#t-roof').checked && !interior;
+  roofG.visible = $('#t-roof').checked && !interior && !iso;
   wallMat.transparent = interior; wallMat.opacity = interior ? 0.16 : 1; wallMat.depthWrite = !interior; wallMat.needsUpdate = true;
   labelR.domElement.classList.toggle('no-zones', !$('#t-labels').checked);
   labelR.domElement.classList.toggle('no-dims', !$('#t-dims').checked);
   dims.visible = $('#t-dims').checked;
   locsG.visible = $('#t-locs').checked;
+  labelR.domElement.classList.toggle('no-locs', !$('#t-locs').checked);
   trucksG.visible = $('#t-trucks').checked;
 }
 
@@ -829,9 +950,9 @@ $('#loc-form').addEventListener('submit', e => {
   else $('#loc-msg').textContent = 'No existe esa ubicación. Usa una letra de la A a la F y un número del 1 al 12, por ejemplo C-7.';
 });
 
-['general', 'planta', 'frente', 'interior'].forEach(n => $('#v-' + n).addEventListener('click', () => setView(n)));
+['general', 'planta', 'frente', 'iso', 'interior'].forEach(n => $('#v-' + n).addEventListener('click', () => setView(n)));
 ['#t-roof', '#t-labels', '#t-dims', '#t-locs', '#t-trucks'].forEach(s => $(s).addEventListener('change', () => {
-  if (s === '#t-roof' && $('#t-roof').checked && interior) setView('general'); else applyToggles();
+  if (s === '#t-roof' && $('#t-roof').checked && (interior || iso)) setView('general'); else applyToggles();
 }));
 
 // picking
@@ -868,6 +989,7 @@ function updateCompass() {
   $('#needle').style.transform = `rotate(${Math.atan2(north.dot(right), north.dot(screenUp)) * 180 / Math.PI}deg)`;
 }
 
+window.bodega3d = { camera, controls, setView, fly, L2W, selectZone, selectLoc };
 applyToggles();
 const [p0, t0] = views.general();
 camera.position.copy(p0); controls.target.copy(t0);
@@ -875,6 +997,7 @@ renderer.setAnimationLoop(now => {
   if (anim) anim(now);
   controls.update();
   updateCompass();
+  for (const [o, v] of locLabels) { o.getWorldPosition(v); o.element.hidden = v.distanceTo(camera.position) > 75; }
   renderer.render(scene, camera);
   labelR.render(scene, camera);
 });
