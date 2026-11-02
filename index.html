@@ -669,10 +669,6 @@ const wallMats = [];
     });
     // waste bin
     box(site, 1.2, 1.3, 1.0, '#2b2e33', 95.5, 0.65, 28.3);
-    // small electrical booth by the Pedro Montt wall, cones and tsunami-route sign
-    box(site, 1.6, 2.3, 1.4, '#c9ccd0', 70, 1.15, 3.2); box(site, 1.8, 0.12, 1.6, '#9aa3ad', 70, 2.36, 3.2);
-    box(site, 1.4, 0.9, 0.06, '#1f7a4d', 78, 1.9, 0.2, { cast: false });
-    [60, 63, 66].forEach(x => { const cn = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 12), mat('#ff6a1a')); cn.position.set(x, 0.35, 2.9); cn.castShadow = true; site.add(cn); });
   }
 
   // --- Zonas seguras al costado de ambos portones
