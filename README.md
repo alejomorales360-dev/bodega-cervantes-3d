@@ -9,6 +9,22 @@ Es una sola página web (`index.html`), sin instalación ni compilación. Usa [t
 - **En línea:** https://alejomorales360-dev.github.io/bodega-cervantes-3d/ (se publica solo con cada cambio en `main`).
 - **En tu computador:** abre `index.html` en el navegador. Necesita internet para cargar three.js y las fuentes.
 
+## Stock por ubicación
+
+En el panel, la sección **Stock por ubicación** permite cargar el stock real desde un Excel (`.xlsx`, `.xls`) o un CSV. También se puede arrastrar el archivo sobre el modelo. Los paquetes se dibujan en cada ubicación según la cantidad real.
+
+- **Columnas:** se detectan solas por el nombre de la columna; si se equivoca, se corrigen en "Columnas del archivo".
+  - **Ubicación** (obligatoria): acepta formatos como A-1, A1, A01 o "A 1". Para la bodega pequeña se escribe `BP`.
+  - **Cantidad de paquetes**: si no existe, cada fila cuenta como un paquete.
+  - **Producto** y **tipo o familia**: definen cómo se ve el paquete (moldura blanca, pino o terciado).
+  - **Largo**: en metros, centímetros o milímetros. Se ajusta a 2,4–4,8 m.
+- **Cómo se apilan:** pila por pila, desde el pasillo, hasta el número de alturas elegido (6 por defecto).
+- **Ocupación:** la página muestra la ocupación estimada y puede colorear el piso de cada ubicación por ocupación (verde, amarillo o rojo). También avisa qué ubicaciones no caben y qué códigos no reconoció.
+- **Detalle por ubicación:** al tocar una ubicación aparece su stock por producto.
+- **Plantilla:** el botón "Descargar plantilla" entrega un CSV de ejemplo.
+- **Informe PDF:** si hay un stock cargado, incluye el stock y la ocupación por ubicación.
+- **Privacidad:** el archivo se lee en el navegador. No se sube a ningún servidor; solo queda guardado en ese navegador para la próxima visita.
+
 ## Capturas e informes
 
 En la barra superior de la página hay dos botones:
