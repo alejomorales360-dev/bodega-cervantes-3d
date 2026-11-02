@@ -608,9 +608,9 @@ const wallMats = [];
   box(site, of.x1 - of.x0 + 0.3, 0.3, of.z1 - of.z0 + 0.3, '#8fa9c2', (of.x0 + of.x1) / 2, 3.75, (of.z0 + of.z1) / 2, { zone: 'oficina' });
   box(site, 0.08, 1.3, 10, '#2c3a4b', of.x0 - 0.04, 2, (of.z0 + of.z1) / 2, { cast: false });
   box(site, 6, 1.3, 0.08, '#2c3a4b', (of.x0 + of.x1) / 2, 2, of.z1 + 0.04, { cast: false });
-  rbox(site, { x0: 85, x1: 93, z0: 14, z1: 21.5 }, 3, '#a7a29a', 0, { zone: 'oficina' });
-  rbox(site, { x0: 85, x1: 93, z0: 21.5, z1: 24.8 }, 3, '#5b86c0', 0, { zone: 'oficina' });
-  rbox(site, { x0: 85, x1: 93, z0: 24.8, z1: 27.2 }, 3, '#bdb7ae', 0, { zone: 'oficina' });
+  rbox(site, { x0: 85, x1: 93, z0: 14, z1: 21.5 }, 3, '#eeeeea', 0, { zone: 'oficina' });
+  rbox(site, { x0: 85, x1: 93, z0: 21.5, z1: 24.8 }, 3, '#e6e6e1', 0, { zone: 'oficina' });
+  rbox(site, { x0: 85, x1: 93, z0: 24.8, z1: 27.2 }, 3, '#eeeeea', 0, { zone: 'oficina' });
 
   // --- Gate control y caseta (Cervantes side, by the portón)
   rbox(site, { x0: 10.5, x1: 13.5, z0: 25.5, z1: 28.5 }, 2.8, '#f2b705', 0, { zone: 'gate' });
@@ -644,10 +644,35 @@ const wallMats = [];
     box(site, 0.05, 1.0, 1.0, '#1f2a36', G2.x0 - 0.03, 1.6, gz, { cast: false });
     box(site, 0.18, 1.0, 0.18, '#d6362b', G2.x0 - 0.5, 0.5, G2.z0 - 0.4);
   }
-  // --- Yellow pedestrian lines from portón trasero 5 into the patio trasero
+  // --- Pedestrian path (double yellow line) from the alero to the camarines building, and details seen in the photo
   {
-    floor(site, { x0: DOORS[4] - 1.0, x1: DOORS[4] - 0.75, z0: R.bodega.z1 + 0.3, z1: R.trasero.z1 - 1 }, null, 0.06, null, mat('#f2c230'));
-    floor(site, { x0: DOORS[4] + 0.75, x1: DOORS[4] + 1.0, z0: R.bodega.z1 + 0.3, z1: R.trasero.z1 - 1 }, null, 0.06, null, mat('#f2c230'));
+    const yl = mat('#e9b91f');
+    floor(site, { x0: 85.9, x1: 86.25, z0: 28.4, z1: R.alero.z1 - 1.15 }, null, 0.062, null, yl);
+    floor(site, { x0: 87.35, x1: 87.7, z0: 28.4, z1: R.alero.z1 - 1.15 }, null, 0.062, null, yl);
+    // concrete step along the camarines front, yellow steps at the path end
+    box(site, 8.4, 0.2, 1.2, '#b9b5ac', 89, 0.1, 27.8);
+    box(site, 1.4, 0.35, 0.5, '#f2c230', 86.8, 0.17, 28.6);
+    // door and two gas-cylinder cages in front of the building
+    box(site, 1.1, 2.2, 0.06, '#5b6470', 88.4, 1.3, 27.23, { cast: false });
+    [90.0, 91.3].forEach(x => {
+      box(site, 1.2, 2.0, 0.9, '#c9ccd0', x, 1.2, 28.0, { material: new THREE.MeshStandardMaterial({ color: '#c9ccd0', metalness: 0.5, roughness: 0.4, transparent: true, opacity: 0.55 }) });
+      for (let k = -1; k <= 1; k++) { const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.1, 12), mat('#d9dde0', { metalness: 0.4 })); cyl.position.set(x + k * 0.35, 0.8, 28.0); site.add(cyl); }
+      box(site, 0.35, 0.35, 0.02, '#d6362b', x, 1.7, 27.54, { cast: false });
+    });
+    // "PARE · MIRE Y ESCUCHE" stop sign at the end of the path
+    box(site, 0.06, 2.0, 0.06, '#55595f', 86.6, 1.0, 28.9);
+    const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.04, 8), mat('#d6362b')); stop.rotation.x = Math.PI / 2; stop.rotation.y = Math.PI / 8; stop.position.set(86.6, 2.1, 28.92); site.add(stop);
+    // flagpoles and cypresses beside the building
+    [93.8, 94.6, 95.4].forEach(x => box(site, 0.1, 8, 0.1, '#e8e8e8', x, 4, 27.9));
+    [[93.6, 25.4], [93.6, 22.6], [93.6, 19.8]].forEach(([x, z]) => {
+      const c = new THREE.Mesh(new THREE.ConeGeometry(0.7, 6, 10), mat('#2f5a2c', { flatShading: true })); c.position.set(x, 3.4, z); c.castShadow = true; site.add(c);
+    });
+    // waste bin
+    box(site, 1.2, 1.3, 1.0, '#2b2e33', 95.5, 0.65, 28.3);
+    // small electrical booth by the Pedro Montt wall, cones and tsunami-route sign
+    box(site, 1.6, 2.3, 1.4, '#c9ccd0', 70, 1.15, 3.2); box(site, 1.8, 0.12, 1.6, '#9aa3ad', 70, 2.36, 3.2);
+    box(site, 1.4, 0.9, 0.06, '#1f7a4d', 78, 1.9, 0.2, { cast: false });
+    [60, 63, 66].forEach(x => { const cn = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 12), mat('#ff6a1a')); cn.position.set(x, 0.35, 2.9); cn.castShadow = true; site.add(cn); });
   }
 
   // --- Zonas seguras al costado de ambos portones
