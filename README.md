@@ -22,6 +22,8 @@ En el panel, la sección **Stock por ubicación** permite cargar el stock real d
 - **Cómo se apilan:** pila por pila, desde el pasillo, hasta el número de alturas elegido (6 por defecto).
 - **Ocupación:** la página muestra la ocupación estimada y puede colorear el piso de cada ubicación por ocupación (verde, amarillo o rojo). También avisa qué ubicaciones no caben y qué códigos no reconoció.
 - **Detalle por ubicación:** al tocar una ubicación aparece su stock por producto.
+- **Filtro por cliente:** muestra lotes, m³, % del stock y % de la capacidad de la bodega del cliente elegido. Sus ubicaciones quedan en amarillo y el resto del stock transparente.
+- **Buscar lote:** escribe el número de lote (completo o parte) y el modelo marca la ubicación con una flecha. Dibuja la ruta desde el portón e indica: portón por el que entrar, fila y lado del pasillo.
 - **Plantilla:** el botón "Descargar plantilla" entrega un CSV de ejemplo.
 - **Informe PDF:** si hay un stock cargado, incluye el stock y la ocupación por ubicación.
 - **Privacidad:** el archivo se lee en el navegador. No se sube a ningún servidor; solo queda guardado en ese navegador para la próxima visita.

@@ -157,6 +157,13 @@ details#s-map summary{cursor:pointer;font-weight:600}
 .maprow select{min-width:0;padding:5px;border:1px solid var(--line);border-radius:5px;background:var(--bg)}
 #s-apply{margin-top:10px}
 .stocklines{margin:8px 0 0;padding-left:16px;font-size:12.5px;line-height:1.45}
+.lbl.loc.dimlbl{opacity:.35}
+.lotcard{border:2px solid #ff4d2e;border-radius:6px;padding:10px 12px;margin:-2px -4px 12px;background:color-mix(in srgb,#ff4d2e 8%,var(--bg))}
+.lotk{font:600 10.5px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lotv{font:700 20px var(--f-mono);word-break:break-all}
+.lotmeta{font-size:12.5px;color:var(--muted);margin-top:2px}
+ol.route{margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.5}
+#cli-sum a{color:var(--ink);font-weight:600}
 </style>
 </head>
 <body>
@@ -232,6 +239,15 @@ details#s-map summary{cursor:pointer;font-weight:600}
       </div>
       <p class="small">El archivo necesita una columna con la ubicación (A-1 a F-12; para la bodega pequeña escribe BP). Opcionales: cantidad de paquetes, producto, tipo y largo. Si no hay columna de cantidad, cada fila cuenta como un paquete. También puedes arrastrar el archivo sobre el modelo.</p>
       <div id="stock-sum" class="card stockcard"></div>
+      <div id="s-tools" hidden>
+        <form class="search" id="lot-form" style="margin-top:12px">
+          <input id="lot-q" type="text" placeholder="Buscar lote, ej. 3622979468" autocomplete="off" aria-label="Buscar lote" style="text-transform:none">
+          <button type="submit">Buscar</button>
+        </form>
+        <div class="msg" id="lot-msg"></div>
+        <div class="maprow" style="margin-top:8px"><label for="s-cli">Filtrar por cliente</label><select id="s-cli"><option value="">Todos los clientes</option></select></div>
+        <div id="cli-sum"></div>
+      </div>
       <label class="switch" id="s-heat-row" hidden><input id="s-heat" type="checkbox"> Colorear ubicaciones por ocupación</label>
       <div class="maprow" style="margin-top:10px"><label for="s-tiers">Alturas máximas por pila</label><select id="s-tiers"><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></div>
       <details id="s-map" hidden><summary>Columnas del archivo</summary>
@@ -887,7 +903,8 @@ const wallMats = [];
 
 /* ---------- Storage locations A–F: floor marking + wood packages (default sample or loaded stock) ---------- */
 const locLabels = [];
-const STOCK = { data: null };          // { byLoc: {code: {qty, lines}}, peq: {qty, lines}, unknown: [...], file, at, total }
+const STOCK = { data: null };
+const FILTER = { cli: '' };          // { byLoc: {code: {qty, lines}}, peq: {qty, lines}, unknown: [...], file, at, total }
 let MAXT = 6;                          // tiers per stack (adjustable in the panel)
 const locInfo = {};                    // code → { n, d, floor, label }
 let layoutPackages;
@@ -921,6 +938,8 @@ const locCapacity = (code, len = 4.8) => { const L = locInfo[code]; return L.n *
   };
   const pkgMat = {};
   ['white', 'pine', 'ply'].forEach(k => { const sd = face(k, true), en = face(k, false), top = mat(k === 'white' ? '#f1f3f1' : k === 'pine' ? '#ead3a6' : '#dcc39a', { roughness: 0.5 }); pkgMat[k] = [sd, sd, top, top, en, en]; });
+  pkgMat.ghost = new THREE.MeshStandardMaterial({ color: '#b9bec4', roughness: 0.8, transparent: true, opacity: 0.22, depthWrite: false });
+  pkgMat.focus = [face('white', true), face('white', true), mat('#ffd34d'), mat('#ffd34d'), face('white', false), face('white', false)];
   const PW = 1.18, PH = 0.82, GAP = 0.08;
   const geoms = {};
   const geoFor = len => (geoms[len] ||= new THREE.BoxGeometry(PW, PH, len));
@@ -973,27 +992,32 @@ const locCapacity = (code, len = 4.8) => { const L = locInfo[code]; return L.n *
           curLen = len;
           for (let q = 0; q < ln.eq && i < n; q++) {
             const zc = slots === 2 ? cz + (slot ? 1 : -1) * (len + GAP) / 2 : cz;
-            put(ln.kind, len, ox + i * (PW + GAP), PH / 2 + tier * PH, zc, false);
+            put(!FILTER.cli ? ln.kind : ln.cli === FILTER.cli ? ln.kind : 'ghost', len, ox + i * (PW + GAP), PH / 2 + tier * PH, zc, false);
             placed++; maxT = Math.max(maxT, tier + 1);
             if (++tier === MAXT) { tier = 0; if (++slot === slots) { slot = 0; i++; } }
           }
         }
         if (e) { e.placed = placed; e.overflow = Math.max(0, e.eq - placed); e.capacity = locCapacity(code, e.lines[0]?.len); }
-        L.label.element.textContent = e ? `${code} · ${fmt(e.qty)}${stock.hasVol ? ' lotes' : ''}` : code;
+        if (FILTER.cli) { const c = e ? e.lines.filter(l => l.cli === FILTER.cli).reduce((a, l) => a + l.qty, 0) : 0; L.label.element.textContent = c ? `${code} · ${fmt(c)} ${esc(FILTER.cli)}` : code; L.label.element.classList.toggle('dimlbl', !c); }
+        else { L.label.element.textContent = e ? `${code} · ${fmt(e.qty)}${stock.hasVol ? ' lotes' : ''}` : code; L.label.element.classList.remove('dimlbl'); }
       }
       L.label.position.y = Math.max(1, maxT) * PH + 0.6;
       // floor colour: blue by default; occupancy colour when stock is loaded and the heat map is on
       const heat = stock && $('#s-heat')?.checked;
-      if (heat) {
+      const fc = FILTER.cli && stock ? (stock.byLoc[code]?.lines.filter(l => l.cli === FILTER.cli).reduce((a, l) => a + l.qty, 0) || 0) : -1;
+      if (fc >= 0) {
+        L.floor.material.color.set(fc ? '#f2b705' : '#9aa3ad'); L.floor.material.opacity = fc ? 0.95 : 0.25; L.floor.material.emissive.set(fc ? '#a87400' : '#000000');
+      } else if (heat) {
         const e = stock.byLoc[code], pct = e ? e.eq / Math.max(1, e.capacity) : 0;
         L.floor.material.color.set(pct === 0 ? '#9aa3ad' : pct < 0.5 ? '#2e9d57' : pct < 0.85 ? '#e5a900' : '#d6362b');
         L.floor.material.opacity = 0.8;
       } else { L.floor.material.color.set('#4a7fc0'); L.floor.material.opacity = 0.35; }
+      if (fc < 0) L.floor.material.emissive.set('#000000');
     }
     // bodega pequeña: two rows of 4.8 m packages along its long walls, central aisle, clear in front of doors 1–4
     const Pq = R.peq, peq = stock?.peq;
     let left = peq ? peq.eq : Infinity, li = 0, lq = 0;
-    const nextKind = () => { if (!peq) return pick(); while (peq.lines[li] && lq >= peq.lines[li].eq) { li++; lq = 0; } lq++; return peq.lines[li]?.kind || 'pine'; };
+    const nextKind = () => { if (!peq) return pick(); while (peq.lines[li] && lq >= peq.lines[li].eq) { li++; lq = 0; } lq++; const l = peq.lines[li]; return !l ? 'pine' : FILTER.cli && l.cli !== FILTER.cli ? 'ghost' : l.kind; };
     [Pq.z0 + 0.9, Pq.z0 + 2.15, Pq.z1 - 2.15, Pq.z1 - 0.9].forEach((z, row) => {
       for (let x = Pq.x0 + 0.8; x + 4.8 < Pq.x1 - 0.5; x += 5.0) {
         const xc = x + 2.4;
@@ -1169,6 +1193,7 @@ function reachStacker(parent, x, z, rotY = 0) {
 let selected = null;
 const markColor = () => new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--mark').trim() || '#e5a900');
 function highlight(r) {
+  if (typeof LOT_ROUTE !== 'undefined') { LOT_ROUTE.traverse(o => o.geometry && o.geometry.dispose()); LOT_ROUTE.clear(); }
   hl.traverse(o => o.geometry && o.geometry.dispose()); hl.clear();
   const c = markColor(), w = r.x1 - r.x0, d = r.z1 - r.z0, h = r.h;
   const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w + 0.6, h + 0.3, d + 0.6)), new THREE.LineBasicMaterial({ color: c }));
@@ -1532,6 +1557,7 @@ const FIELDS = [
   ['largo', 'Largo', /largo|long|length|medida/],
   ['vol', 'Volumen (m³)', /vol|m3|m³/],
   ['cli', 'Cliente', /client/],
+  ['lote', 'Lote', /^\s*lote|\blot\b|batch|pallet id/],
 ];
 let stockRaw = null;                         // { header: [...], rows: [[...]], file }
 const parseNum = v => {
@@ -1563,12 +1589,13 @@ function guessMapping(header, rows) {
   return map;
 }
 function applyStock(raw, map) {
-  const byLoc = {}, unknown = new Map(); let total = 0, totalVol = 0, peq = null;
+  const byLoc = {}, unknown = new Map(), lots = new Map(); let total = 0, totalVol = 0, peq = null;
   for (const r of raw.rows) {
     const code = normCode(r[map.ubic]); const q = map.qty != null ? parseNum(r[map.qty]) : 1;
     if (!isFinite(q) || q <= 0) continue;
     const qty = Math.round(q);
-    if (!code) { const k = String(r[map.ubic] ?? '').trim() || '(vacío)'; unknown.set(k, (unknown.get(k) || 0) + qty); continue; }
+    const lotId = map.lote != null ? String(r[map.lote] ?? '').trim() : '';
+    if (!code) { const k = String(r[map.ubic] ?? '').trim() || '(vacío)'; unknown.set(k, (unknown.get(k) || 0) + qty); if (lotId) lots.set(lotId.toUpperCase(), { lote: lotId, code: null, raw: k, cli: map.cli != null ? String(r[map.cli] ?? '') : '', prod: map.prod != null ? String(r[map.prod] ?? '') : '', vol: map.vol != null ? parseNum(r[map.vol]) || 0 : 0 }); continue; }
     const prod = map.prod != null ? String(r[map.prod] ?? '').trim() : '', tipo = map.tipo != null ? String(r[map.tipo] ?? '').trim() : '';
     const cli = map.cli != null ? String(r[map.cli] ?? '').trim() : '', v = map.vol != null ? (parseNum(r[map.vol]) || 0) : 0;
     const line = { prod: prod || tipo || 'Sin descripción', cli, tipo, qty, vol: v, len: (map.largo != null && snapLen(r[map.largo])) || 4.8, kind: pkgKind(tipo + ' ' + prod) };
@@ -1576,27 +1603,38 @@ function applyStock(raw, map) {
     const same = tgt.lines.find(l => l.prod === line.prod && l.cli === line.cli && l.len === line.len);
     same ? (same.qty += qty, same.vol += v) : tgt.lines.push(line);
     tgt.qty += qty; tgt.vol += v; total += qty; totalVol += v;
+    if (lotId) lots.set(lotId.toUpperCase(), { lote: lotId, code, raw: String(r[map.ubic] ?? ''), cli, prod: line.prod, vol: v });
   }
   // packages drawn: from volume when the file has it (one package ≈ 1,18 × 0,82 × largo), otherwise one per unit
   const eqOf = l => map.vol != null ? Math.max(l.vol > 0 ? 1 : 0, Math.round(l.vol / (1.18 * 0.82 * l.len * 0.92))) : l.qty;
   [...Object.values(byLoc), peq].filter(Boolean).forEach(e => { e.lines.forEach(l => (l.eq = eqOf(l))); e.eq = e.lines.reduce((a, l) => a + l.eq, 0); e.lines.sort((a, b) => b.len - a.len || b.eq - a.eq); });
-  STOCK.data = { byLoc, peq, unknown: [...unknown], total, totalVol, hasVol: map.vol != null, file: raw.file, at: new Date().toLocaleString('es-CL'), map };
+  STOCK.data = { byLoc, peq, lots, unknown: [...unknown], total, totalVol, hasVol: map.vol != null, file: raw.file, at: new Date().toLocaleString('es-CL'), map };
   layoutPackages();
   renderStockUI();
   try { localStorage.setItem('bodega-stock', JSON.stringify({ raw, map })); } catch (e) { /* storage full or blocked */ }
   if (selected?.startsWith('loc:')) selectLoc(selected.slice(4), false);
 }
 function clearStock() {
+  FILTER.cli = '';
   STOCK.data = null; stockRaw = null; layoutPackages(); renderStockUI();
   try { localStorage.removeItem('bodega-stock'); } catch (e) {}
   if (selected?.startsWith('loc:')) selectLoc(selected.slice(4), false);
 }
 function renderStockUI() {
   const S2 = STOCK.data, box2 = $('#stock-sum');
-  $('#s-clear').hidden = !S2; $('#s-heat-row').hidden = !S2; $('#s-map').hidden = !stockRaw;
+  $('#s-clear').hidden = !S2; $('#s-heat-row').hidden = !S2; $('#s-tools').hidden = !S2;
+  if (S2) {
+    const clis = [...new Set([...Object.values(S2.byLoc), S2.peq].filter(Boolean).flatMap(e => e.lines.map(l => l.cli)).filter(Boolean))].sort();
+    $('#s-cli').innerHTML = '<option value="">Todos los clientes</option>' + clis.map(c => `<option ${c === FILTER.cli ? 'selected' : ''}>${esc(c)}</option>`).join('');
+    $('#s-cli').closest('.maprow').hidden = !clis.length;
+    $('#lot-form').hidden = !S2.lots.size;
+    renderClientSummary();
+  } $('#s-map').hidden = !stockRaw;
   document.querySelectorAll('#locgrid button').forEach(b => {
     const e = S2?.byLoc[b.dataset.code], c = b.dataset.code;
-    b.innerHTML = S2 ? `${c}<small>${e ? fmt(e.qty) : '—'}</small>` : c;
+    const fq = FILTER.cli && e ? e.lines.filter(l => l.cli === FILTER.cli).reduce((a, l) => a + l.qty, 0) : 0;
+    b.innerHTML = S2 ? `${c}<small>${FILTER.cli ? (fq ? fmt(fq) : '—') : e ? fmt(e.qty) : '—'}</small>` : c;
+    if (FILTER.cli) { b.style.background = fq ? 'color-mix(in srgb,#f2b705 55%,transparent)' : 'transparent'; return; }
     b.style.background = !S2 ? '' : !e ? 'transparent' : (e.eq / Math.max(1, e.capacity) >= 0.85 ? 'color-mix(in srgb,#d6362b 35%,transparent)' : e.eq / Math.max(1, e.capacity) >= 0.5 ? 'color-mix(in srgb,#e5a900 35%,transparent)' : 'color-mix(in srgb,#2e9d57 30%,transparent)');
   });
   if (!S2) { box2.innerHTML = '<p class="empty">El modelo muestra paquetes de ejemplo. Carga tu stock para ubicarlos según las cantidades reales.</p>'; return; }
@@ -1617,6 +1655,62 @@ function clientSummary(S2) {
   [...Object.values(S2.byLoc), S2.peq].filter(Boolean).forEach(e => e.lines.forEach(l => { const k = l.cli || 'Sin cliente'; agg[k] ||= { q: 0, v: 0 }; agg[k].q += l.qty; agg[k].v += l.vol; }));
   return `<ul class="stocklines">${Object.entries(agg).sort((a, b) => b[1].v - a[1].v || b[1].q - a[1].q).map(([k, a]) => `<li>${esc(k)} · ${fmt(a.q)} lotes${S2.hasVol ? ` · ${fmt(a.v, 0)} m³` : ''}</li>`).join('')}</ul>`;
 }
+function renderClientSummary() {
+  const S2 = STOCK.data, box3 = $('#cli-sum'); if (!S2 || !FILTER.cli) { box3.innerHTML = ''; return; }
+  let q = 0, v = 0; const rows = [];
+  Object.entries(S2.byLoc).forEach(([code, e]) => { const ls = e.lines.filter(l => l.cli === FILTER.cli); if (!ls.length) return; const lq = ls.reduce((a, l) => a + l.qty, 0), lv = ls.reduce((a, l) => a + l.vol, 0); q += lq; v += lv; rows.push([code, lq, lv, lv / Math.max(1e-9, e.vol)]); });
+  if (S2.peq) { const ls = S2.peq.lines.filter(l => l.cli === FILTER.cli); const lq = ls.reduce((a, l) => a + l.qty, 0); if (lq) { const lv = ls.reduce((a, l) => a + l.vol, 0); q += lq; v += lv; rows.push(['Bodega pequeña', lq, lv, lv / Math.max(1e-9, S2.peq.vol)]); } }
+  const cap = Object.keys(LOCS).reduce((a, c) => a + locCapacity(c, S2.byLoc[c]?.lines[0]?.len), 0) * 1.18 * 0.82 * 4.8 * 0.92;
+  const by = S2.hasVol ? 2 : 1; rows.sort((a, b) => b[by] - a[by]);
+  box3.innerHTML = `<div class="card stockcard"><h3>${esc(FILTER.cli)}</h3><dl class="kv">
+    <dt>Lotes</dt><dd>${fmt(q)} (${fmt(q / Math.max(1, S2.total) * 100, 1)} % del total)</dd>
+    ${S2.hasVol ? `<dt>Volumen</dt><dd>${fmt(v, 0)} m³ (${fmt(v / Math.max(1e-9, S2.totalVol) * 100, 1)} % del stock)</dd><dt>Uso de la bodega</dt><dd>${fmt(v / cap * 100, 1)} % de la capacidad estimada</dd>` : ''}
+    <dt>Ubicaciones</dt><dd>${rows.filter(r => r[0] !== 'Bodega pequeña').length} de 72 (marcadas en amarillo)</dd></dl>
+    <ul class="stocklines">${rows.slice(0, 14).map(([c, lq, lv, sh]) => `<li><a href="#" data-goto="${c}">${c}</a> · ${fmt(lq)} lotes${S2.hasVol ? ` · ${fmt(lv, 1)} m³ · ${fmt(sh * 100, 0)} % de la ubicación` : ''}</li>`).join('')}${rows.length > 14 ? `<li>… y ${rows.length - 14} ubicaciones más</li>` : ''}</ul></div>`;
+}
+const LOT_ROUTE = new THREE.Group(); root.add(LOT_ROUTE);
+function findLot(q) {
+  const S2 = STOCK.data; if (!S2) return;
+  const key = q.trim().toUpperCase(); if (!key) return;
+  let hit = S2.lots.get(key);
+  if (!hit) { const m = [...S2.lots.values()].filter(l => l.lote.toUpperCase().includes(key)); if (m.length === 1) hit = m[0]; else if (m.length > 1) { $('#lot-msg').innerHTML = `${m.length} lotes contienen “${esc(q)}”: ${m.slice(0, 6).map(l => `<a href="#" data-lot="${esc(l.lote)}">${esc(l.lote)}</a>`).join(', ')}${m.length > 6 ? '…' : ''}`; return; } }
+  if (!hit) { $('#lot-msg').textContent = `No encontré el lote “${q}” en el stock cargado.`; return; }
+  if (!hit.code) { $('#lot-msg').textContent = `El lote ${hit.lote} figura en “${hit.raw}”, que no es una ubicación del plano.`; return; }
+  $('#lot-msg').textContent = '';
+  if (hit.code === 'PEQ') { selectZone('peq'); routeTo(null, hit); return; }
+  selectLoc(hit.code); routeTo(hit.code, hit);
+}
+function routeTo(code, lot) {
+  LOT_ROUTE.traverse(o => o.geometry && o.geometry.dispose()); LOT_ROUTE.clear();
+  const B = R.bodega, yM = mat('#ff4d2e', { emissive: '#ff4d2e', emissiveIntensity: 0.4 });
+  let html;
+  if (code) {
+    const r = LOCS[code], cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
+    const di = DOORS.map((x, i) => [Math.abs(x - cx), i]).sort((a, b) => a[0] - b[0])[0][1], dx = DOORS[di];
+    const side = cx < dx ? 'izquierda (lado Cervantes)' : 'derecha (lado Macaya)';
+    const ex = cx < dx ? r.x1 : r.x0;
+    // route on the floor: from the portón straight up the aisle, then into the location
+    const seg = (x0, x1, z0, z1) => { const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.35, Math.abs(x1 - x0)), 0.03, Math.max(0.35, Math.abs(z1 - z0))), yM); m.position.set((x0 + x1) / 2, 0.11, (z0 + z1) / 2); LOT_ROUTE.add(m); };
+    seg(dx, dx, B.z0 - 3, cz); seg(Math.min(dx, ex), Math.max(dx, ex), cz, cz);
+    const pin = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.8, 16), yM); pin.rotation.x = Math.PI; pin.position.set(cx, 6.5, cz); pin.userData.bob = true; LOT_ROUTE.add(pin);
+    html = `<ol class="route"><li>Entra por el <b>Portón ${di + 1}</b>, bajo el alero.</li><li>Avanza por el pasillo hasta la <b>fila ${r.row}</b>${r.row > 6 ? ', pasando los pilares del centro' : ''}.</li><li>La ubicación <b>${code}</b> queda a tu <b>${side}</b>.</li></ol>`;
+  } else html = '<ol class="route"><li>Entra a la bodega grande por cualquier portón.</li><li>Sigue hasta el fondo y pasa a la <b>bodega pequeña</b> por los portones traseros 1 a 4.</li></ol>';
+  setTimeout(() => $('#info').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  $('#info').insertAdjacentHTML('afterbegin', `<div class="lotcard"><div class="lotk">Lote</div><div class="lotv">${esc(lot.lote)}</div>
+    <div class="lotmeta">${[lot.cli, lot.prod, lot.vol ? fmt(lot.vol, 2) + ' m³' : ''].filter(Boolean).map(esc).join(' · ')}</div>${html}</div>`);
+}
+$('#lot-form').addEventListener('submit', e => { e.preventDefault(); findLot($('#lot-q').value); });
+$('#lot-msg').addEventListener('click', e => { const a = e.target.closest('[data-lot]'); if (a) { e.preventDefault(); $('#lot-q').value = a.dataset.lot; findLot(a.dataset.lot); } });
+$('#s-cli').addEventListener('change', e => {
+  FILTER.cli = e.target.value; layoutPackages(); renderStockUI();
+  if (!FILTER.cli) return;
+  const codes = Object.entries(STOCK.data.byLoc).filter(([, v]) => v.lines.some(l => l.cli === FILTER.cli)).map(([c]) => LOCS[c]);
+  if (!codes.length) return;
+  interior = true; iso = false; ['general', 'planta', 'frente', 'iso', 'interior'].forEach(n => $('#v-' + n).setAttribute('aria-pressed', String(n === 'interior'))); applyToggles();
+  const bb = { x0: Math.min(...codes.map(r => r.x0)), x1: Math.max(...codes.map(r => r.x1)), z0: Math.min(...codes.map(r => r.z0)), z1: Math.max(...codes.map(r => r.z1)), h: 3 };
+  flyToRect(bb, 1.1);
+});
+$('#cli-sum').addEventListener('click', e => { const a = e.target.closest('[data-goto]'); if (!a) return; e.preventDefault(); a.dataset.goto === 'Bodega pequeña' ? selectZone('peq') : selectLoc(a.dataset.goto); });
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function showMapping(raw, map) {
   $('#s-map-fields').innerHTML = FIELDS.map(([k, name]) => `<label class="maprow"><span>${name}</span><select data-k="${k}"><option value="">— no usar —</option>${raw.header.map((h, i) => `<option value="${i}" ${map[k] === i ? 'selected' : ''}>${esc(h || 'Columna ' + (i + 1))}</option>`).join('')}</select></label>`).join('');
@@ -1684,6 +1778,7 @@ renderer.setAnimationLoop(now => {
   if (anim) anim(now);
   controls.update();
   updateCompass();
+  if (typeof LOT_ROUTE !== 'undefined') LOT_ROUTE.children.forEach(o => { if (o.userData.bob) { o.position.y = 6.5 + Math.sin(now / 250) * 0.5; o.rotation.y = now / 600; } });
   for (const [o, v] of locLabels) { o.getWorldPosition(v); o.element.hidden = v.distanceTo(camera.position) > 75; }
   renderer.render(scene, camera);
   labelR.render(scene, camera);
